@@ -748,40 +748,36 @@
             }, 250);
         }
 
-        function exportToWhatsApp() {
-            const tasks = getAllTasks();
-            const date = new Date().toLocaleDateString('pt-BR');
-            
-            let message = `*📋 KANBAN - GESTÃO DE ATIVIDADES CGF*\n`;
-            message += `_Atualizado em: ${date}_\n\n`;
+function exportToWhatsApp() {
+    const title = "📋 KANBAN - GESTÃO DE ATIVIDADES CGF";
+    const date = new Date().toLocaleDateString('pt-BR');
+    let message = `${title}\nAtualizado em: ${date}\n\n`;
 
-            const sections = [
-                { key: 'todo', title: '🔴 A FAZER', emoji: '⏳' },
-                { key: 'progress', title: '🟡 EM ANDAMENTO', emoji: '⚙️' },
-                { key: 'review', title: '🔵 EM REVISÃO', emoji: '🔍' },
-                { key: 'done', title: '🟢 CONCLUÍDO', emoji: '✅' }
-            ];
+    const sections = document.querySelectorAll(".kanban-column");
+    sections.forEach(section => {
+        const header = section.querySelector("h2").textContent;
+        const tasks = section.querySelectorAll(".kanban-card");
 
-            sections.forEach(section => {
-                message += `\n*${section.title}* (${tasks[section.key].length})\n`;
-                message += `${'─'.repeat(30)}\n`;
-                
-                if (tasks[section.key].length === 0) {
-                    message += `_Nenhuma tarefa_\n`;
-                } else {
-                    tasks[section.key].forEach((task, index) => {
-                        message += `\n${section.emoji} *${task.title}*\n`;
-                        message += `${task.description}\n`;
-                        message += `👤 ${task.responsible}\n`;
-                        message += `📅 ${task.deadline}\n`;
-                    });
-                }
-            });
+        message += `${header} (${tasks.length})\n${"─".repeat(30)}\n\n`;
 
-            message += `\n\n_Relatório gerado automaticamente pelo Sistema Kanban CGF_`;
-const encodedMessage = encodeURIComponent(unescape(encodeURIComponent(message)));
-window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
-        }
+        tasks.forEach(task => {
+            const title = task.querySelector("h3").textContent;
+            const desc = task.querySelector("p:nth-of-type(1)").textContent;
+            const people = task.querySelector("p:nth-of-type(2)").textContent;
+            const date = task.querySelector("p:nth-of-type(3)").textContent;
+
+            message += `${title}\n${desc}\n${people}\n${date}\n\n`;
+        });
+    });
+
+    message += `Relatório gerado automaticamente pelo Sistema Kanban CGF`;
+
+    // ✅ Codifica corretamente em UTF-8 (sem corromper emojis)
+    const encodedMessage = encodeURIComponent(message);
+
+    // ✅ Usa API do WhatsApp compatível com emojis e acentos
+    window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+}
     </script>
 </body>
 </html>
