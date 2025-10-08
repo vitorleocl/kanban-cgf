@@ -232,6 +232,33 @@ function createTaskCard(title, description, responsible, deadline, color){
     card.querySelector('.edit-task-btn').addEventListener('click', ()=> openModal(card.closest('.kanban-column').dataset.status, card));
     return card;
 }
+function saveTasksToLocalStorage() {
+    const tasks = getAllTasks();
+    localStorage.setItem('kanbanTasks', JSON.stringify(tasks));
+}
+
+function loadTasksFromLocalStorage() {
+    const saved = localStorage.getItem('kanbanTasks');
+    if (saved) {
+        const tasks = JSON.parse(saved);
+        Object.keys(tasks).forEach(status => {
+            tasks[status].forEach(t => {
+                const card = createTaskCard(t.title, t.description, t.responsible, t.deadline, getColorByStatus(status));
+                document.getElementById(`${status}-list`).appendChild(card);
+            });
+        });
+    }
+}
+
+function getColorByStatus(status) {
+    switch(status) {
+        case 'todo': return 'red';
+        case 'progress': return 'yellow';
+        case 'review': return 'blue';
+        case 'done': return 'green';
+        default: return 'red';
+    }
+}
 
 // Drag & Drop
 function setupDragAndDrop(card){
