@@ -779,9 +779,8 @@
             });
 
             message += `\n\n_Relatório gerado automaticamente pelo Sistema Kanban CGF_`;
-
-            const encodedMessage = encodeURIComponent(message);
-            window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+const encodedMessage = encodeURIComponent(unescape(encodeURIComponent(message)));
+window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
         }
     </script>
 </body>
