@@ -70,37 +70,36 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   <div class="kanban-board">
     <!-- A FAZER -->
     <div class="kanban-column" data-status="todo">
-      <div class="column-header red">A FAZER</div>
-      <div class="task-list" id="todo-list">
-      </div>
-      <button class="add-task-btn" onclick="openModal('todo')">+ Adicionar Tarefa</button>
+    <div class="column-header red">A FAZER</div>
+    <div class="task-list" id="todo-list">
+        <!-- Tarefas serão adicionadas pelo usuário -->
     </div>
+    <button class="add-task-btn" onclick="openModal('todo')">+ Adicionar Tarefa</button>
+</div>
 
-    <!-- EM ANDAMENTO -->
-    <div class="kanban-column" data-status="progress">
-      <div class="column-header yellow">EM ANDAMENTO</div>
-      <div class="task-list" id="progress-list">
-      </div>
-      <button class="add-task-btn" onclick="openModal('progress')">+ Adicionar Tarefa</button>
+<div class="kanban-column" data-status="progress">
+    <div class="column-header yellow">EM ANDAMENTO</div>
+    <div class="task-list" id="progress-list">
+        <!-- Tarefas serão adicionadas pelo usuário -->
     </div>
+    <button class="add-task-btn" onclick="openModal('progress')">+ Adicionar Tarefa</button>
+</div>
 
-    <!-- EM REVISÃO -->
-    <div class="kanban-column" data-status="review">
-      <div class="column-header blue">EM REVISÃO</div>
-      <div class="task-list" id="review-list">
-        <div class="task-card blue-border" draggable="true">
-      </div>
-      <button class="add-task-btn" onclick="openModal('review')">+ Adicionar Tarefa</button>
+<div class="kanban-column" data-status="review">
+    <div class="column-header blue">EM REVISÃO</div>
+    <div class="task-list" id="review-list">
+        <!-- Tarefas serão adicionadas pelo usuário -->
     </div>
+    <button class="add-task-btn" onclick="openModal('review')">+ Adicionar Tarefa</button>
+</div>
 
-    <!-- CONCLUÍDO -->
-    <div class="kanban-column" data-status="done">
-      <div class="column-header green">CONCLUÍDO</div>
-      <div class="task-list" id="done-list">
-      </div>
-      <button class="add-task-btn" onclick="openModal('done')">+ Adicionar Tarefa</button>
+<div class="kanban-column" data-status="done">
+    <div class="column-header green">CONCLUÍDO</div>
+    <div class="task-list" id="done-list">
+        <!-- Tarefas serão adicionadas pelo usuário -->
     </div>
-  </div>
+    <button class="add-task-btn" onclick="openModal('done')">+ Adicionar Tarefa</button>
+</div>
 </div>
 
 <!-- Modal de Tarefa -->
