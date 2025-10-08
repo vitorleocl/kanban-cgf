@@ -185,23 +185,24 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 <script>
 let currentStatus = 'todo';
 let draggedElement = null;
-let editingCard = null; // nova variável para edição
+let editingCard = null; // tarefa sendo editada
 
 function openModal(status, card = null) {
     currentStatus = status;
     editingCard = card;
 
-    document.getElementById('taskModal').classList.add('active');
+    const modal = document.getElementById('taskModal');
+    modal.classList.add('active');
 
-    if (card) { // se for edição, preencher campos
+    if(card) { // editar tarefa existente
         document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
         document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
         document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag'))
-            .map(tag => tag.textContent).join(', ');
+            .map(t=>t.textContent).join(', ');
         const deadlineEl = card.querySelector('.task-deadline');
         document.getElementById('taskDeadline').value = deadlineEl ? formatDateForInput(deadlineEl.textContent.replace('📅 ','') ) : '';
-        const colorClass = card.className.match(/(red|yellow|blue|green)-border/);
-        document.getElementById('taskColor').value = colorClass ? colorClass[1] : 'red';
+        const colorMatch = card.className.match(/(red|yellow|blue|green)-border/);
+        document.getElementById('taskColor').value = colorMatch ? colorMatch[1] : 'red';
     } else {
         document.getElementById('taskForm').reset();
     }
@@ -214,13 +215,12 @@ function closeModal() {
 }
 
 function formatDateForInput(dateStr) {
-    // converte dd/mm/yyyy -> yyyy-mm-dd
     const parts = dateStr.split('/');
-    if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    if(parts.length===3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
     return '';
 }
 
-document.getElementById('taskForm').addEventListener('submit', function(e) {
+document.getElementById('taskForm').addEventListener('submit', function(e){
     e.preventDefault();
     const title = document.getElementById('taskTitle').value;
     const description = document.getElementById('taskDescription').value;
@@ -228,14 +228,14 @@ document.getElementById('taskForm').addEventListener('submit', function(e) {
     const deadline = document.getElementById('taskDeadline').value;
     const color = document.getElementById('taskColor').value;
 
-    if(editingCard) {
+    if(editingCard){
         // atualizar tarefa existente
         editingCard.querySelector('.task-title').textContent = title;
         editingCard.querySelector('.task-description').textContent = description;
         const respDiv = editingCard.querySelector('.task-responsible');
         respDiv.innerHTML = responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
         const deadlineDiv = editingCard.querySelector('.task-deadline');
-        if(deadline) {
+        if(deadline){
             if(deadlineDiv) deadlineDiv.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
             else {
                 const metaDiv = editingCard.querySelector('.task-meta');
@@ -244,86 +244,95 @@ document.getElementById('taskForm').addEventListener('submit', function(e) {
                 div.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
                 metaDiv.appendChild(div);
             }
-        } else {
-            if(deadlineDiv) deadlineDiv.remove();
-        }
-        // atualizar cor
+        } else if(deadlineDiv) deadlineDiv.remove();
         editingCard.className = `task-card ${color}-border`;
         editingCard = null;
     } else {
         // criar nova tarefa
         const taskCard = createTaskCard(title, description, responsible, deadline, color);
-        const listId = currentStatus + '-list';
-        document.getElementById(listId).appendChild(taskCard);
+        document.getElementById(currentStatus+'-list').appendChild(taskCard);
     }
 
     closeModal();
 });
 
-function createTaskCard(title, description, responsible, deadline, color) {
+function createTaskCard(title, description, responsible, deadline, color){
     const card = document.createElement('div');
     card.className = `task-card ${color}-border`;
     card.draggable = true;
-    const responsibleTags = responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
-    const formattedDate = deadline ? new Date(deadline).toLocaleDateString('pt-BR') : '';
     card.innerHTML = `
         <div class="task-title">${title}</div>
         <div class="task-description">${description}</div>
         <div class="task-meta">
-            <div class="task-responsible">${responsibleTags}</div>
-            ${formattedDate ? `<div class="task-deadline">📅 ${formattedDate}</div>` : ''}
+            <div class="task-responsible">${responsible.split(',').map(r=>`<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+            ${deadline ? `<div class="task-deadline">📅 ${new Date(deadline).toLocaleDateString('pt-BR')}</div>` : ''}
         </div>
+        <button class="edit-task-btn" style="margin-top:5px; padding:3px 6px; font-size:12px;">✏️ Editar</button>
     `;
     setupDragAndDrop(card);
-    // permitir edição com duplo clique
-    card.addEventListener('dblclick', () => {
-        const status = card.closest('.kanban-column').getAttribute('data-status');
-        openModal(status, card);
-    });
+    // duplo clique ou botão editar
+    card.querySelector('.edit-task-btn').addEventListener('click', ()=> openModal(card.closest('.kanban-column').dataset.status, card));
     return card;
 }
 
 // Drag & Drop
-function setupDragAndDrop(card) {
-    card.addEventListener('dragstart', function() {
-        draggedElement = this;
-        this.classList.add('dragging');
-    });
-    card.addEventListener('dragend', function() {
-        this.classList.remove('dragging');
-    });
+function setupDragAndDrop(card){
+    card.addEventListener('dragstart', ()=>{ draggedElement = card; card.classList.add('dragging'); });
+    card.addEventListener('dragend', ()=>{ card.classList.remove('dragging'); });
 }
-document.querySelectorAll('.task-list').forEach(list => {
-    list.addEventListener('dragover', function(e) { e.preventDefault(); });
-    list.addEventListener('drop', function(e) {
-        e.preventDefault();
-        if(draggedElement) this.appendChild(draggedElement);
-    });
+document.querySelectorAll('.task-list').forEach(list=>{
+    list.addEventListener('dragover', e=>{ e.preventDefault(); });
+    list.addEventListener('drop', e=>{ e.preventDefault(); if(draggedElement) list.appendChild(draggedElement); });
 });
 
-// Exportação PDF
-function exportToPDF() {
+// Export PDF
+function exportToPDF(){
     const tasks = getAllTasks();
     const date = new Date().toLocaleDateString('pt-BR');
-    let content = `<html><head><meta charset="UTF-8"><title>Relatório Kanban CGF</title></head><body>`;
-    content += `<h1>📋 Relatório Kanban - CGF</h1><div>Gerado em: ${date}</div>`;
-    const sections = ['todo','progress','review','done'];
-    sections.forEach(key => {
-        content += `<h2>${key.toUpperCase()} (${tasks[key].length})</h2>`;
-        tasks[key].forEach(t => {
-            content += `<div>${t.title} - ${t.description} - ${t.responsible} - ${t.deadline}</div>`;
+    let content = `
+        <html><head><meta charset="UTF-8"><title>Relatório Kanban</title>
+        <style>
+        body{font-family:Arial; padding:30px; background:#f5f7fa;}
+        h1{color:#2c3e50;}
+        .section{margin-bottom:30px;}
+        .section-title{padding:10px; color:white; font-weight:bold; border-radius:5px; margin-bottom:10px;}
+        .red{background:#e74c3c;} .yellow{background:#f39c12;}
+        .blue{background:#3498db;} .green{background:#27ae60;}
+        .task{background:#fff; padding:10px; margin-bottom:8px; border-left:4px solid; border-radius:5px;}
+        .red-border{border-left-color:#e74c3c;}
+        .yellow-border{border-left-color:#f39c12;}
+        .blue-border{border-left-color:#3498db;}
+        .green-border{border-left-color:#27ae60;}
+        .task-title{font-weight:bold;}
+        .task-meta{font-size:12px;color:#7f8c8d; margin-top:5px;}
+        </style>
+        </head><body>
+        <h1>📋 Relatório Kanban - CGF</h1>
+        <div>Gerado em: ${date}</div>
+    `;
+    const sections = [
+        {key:'todo', title:'A FAZER', color:'red', border:'red-border'},
+        {key:'progress', title:'EM ANDAMENTO', color:'yellow', border:'yellow-border'},
+        {key:'review', title:'EM REVISÃO', color:'blue', border:'blue-border'},
+        {key:'done', title:'CONCLUÍDO', color:'green', border:'green-border'}
+    ];
+    sections.forEach(s=>{
+        content += `<div class="section"><div class="section-title ${s.color}">${s.title} (${tasks[s.key].length})</div>`;
+        if(tasks[s.key].length===0) content += '<div style="color:#7f8c8d;font-style:italic;">Nenhuma tarefa</div>';
+        tasks[s.key].forEach(t=>{
+            content += `<div class="task ${s.border}"><div class="task-title">${t.title}</div>${t.description ? `<div>${t.description}</div>` : ''}<div class="task-meta">👤 ${t.responsible} | 📅 ${t.deadline || 'Sem prazo'}</div></div>`;
         });
-        if(tasks[key].length===0) content += `<div>Nenhuma tarefa</div>`;
+        content += '</div>';
     });
-    content += `</body></html>`;
+    content += '</body></html>';
     const w = window.open('', '_blank');
     w.document.write(content);
     w.document.close();
     w.print();
 }
 
-// Exportação WhatsApp
-function exportToWhatsApp() {
+// Export WhatsApp
+function exportToWhatsApp(){
     const tasks = getAllTasks();
     const date = new Date().toLocaleDateString('pt-BR');
     let msg = `📋 KANBAN CGF - Atualizado em ${date}\n\n`;
@@ -344,28 +353,26 @@ function exportToWhatsApp() {
         if(tasks[s.key].length===0) msg += `Nenhuma tarefa\n`;
         msg += '\n';
     });
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-// Captura tarefas atuais
-function getAllTasks() {
+function getAllTasks(){
     const statuses = ['todo','progress','review','done'];
-    const all = { todo:[], progress:[], review:[], done:[] };
-    statuses.forEach(status=>{
-        document.querySelectorAll(`#${status}-list .task-card`).forEach(card=>{
+    const all = {todo:[],progress:[],review:[],done:[]};
+    statuses.forEach(s=>{
+        document.querySelectorAll(`#${s}-list .task-card`).forEach(card=>{
             const title = card.querySelector('.task-title').textContent;
             const description = card.querySelector('.task-description').textContent;
             const responsible = Array.from(card.querySelectorAll('.responsible-tag')).map(t=>t.textContent).join(', ');
             const deadlineEl = card.querySelector('.task-deadline');
             const deadline = deadlineEl ? deadlineEl.textContent.replace('📅 ','') : '';
-            all[status].push({title,description,responsible,deadline});
+            all[s].push({title,description,responsible,deadline});
         });
     });
     return all;
 }
 
-// Fechar modal clicando fora
+// fechar modal clicando fora
 window.onclick = e => { const modal = document.getElementById('taskModal'); if(e.target===modal) closeModal(); };
 </script>
 </body>
