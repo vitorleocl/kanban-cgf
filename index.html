@@ -1,3 +1,5 @@
+quero sim, inclua aqui
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -320,53 +322,31 @@ function exportToPDF() {
   w.print();
 }
 
-// ---------- Contatos WhatsApp ----------
-const contatos = {
-  "Ana Silva": "5581999999999",
-  "Carlos Santos": "5581988888888",
-  "João Pedro": "5581977777777",
-  "Maria Oliveira": "5581966666666",
-  "Lucas Ferreira": "5581955555555"
-};
-
 // ---------- Export WhatsApp ----------
 function exportToWhatsApp() {
   const tasks = getAllTasks();
   const date = new Date().toLocaleDateString('pt-BR');
   let msg = `📋 KANBAN CGF - Atualizado em ${date}\n\n`;
-
   const sections = [
     { key: 'todo', emoji: '🔴 A FAZER' },
     { key: 'progress', emoji: '🟡 EM ANDAMENTO' },
     { key: 'review', emoji: '🔵 EM REVISÃO' },
     { key: 'done', emoji: '🟢 CONCLUÍDO' }
   ];
-
   sections.forEach(s => {
     msg += `${s.emoji} (${tasks[s.key].length})\n`;
     tasks[s.key].forEach(t => {
       msg += `• ${t.title}\n`;
       if (t.description) msg += `${t.description}\n`;
-      if (t.responsible) {
-        const nomes = t.responsible.split(',').map(r => r.trim());
-        nomes.forEach(nome => {
-          if (contatos[nome]) {
-            msg += `👤 ${nome} — [Enviar mensagem](https://wa.me/${contatos[nome]}?text=${encodeURIComponent('Olá ' + nome + ', sobre a tarefa: ' + t.title)})\n`;
-          } else {
-            msg += `👤 ${nome}\n`;
-          }
-        });
-      }
+      if (t.responsible) msg += `👤 ${t.responsible}\n`;
       if (t.deadline) msg += `📅 ${t.deadline}\n`;
     });
     if (tasks[s.key].length === 0) msg += `Nenhuma tarefa\n`;
     msg += `\n`;
   });
-
-  // WhatsApp não suporta links markdown diretos, então removemos o formato e mantemos texto
-  const cleanMsg = msg.replace(/\[Enviar mensagem\]\((.*?)\)/g, 'Enviar mensagem: $1');
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(cleanMsg)}`, '_blank');
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
 }
+
 // ---------- Inicialização ----------
 window.onclick = e => { const modal = document.getElementById('taskModal'); if (e.target === modal) closeModal(); };
 document.addEventListener('DOMContentLoaded', loadTasksFromLocalStorage);
