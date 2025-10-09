@@ -34,22 +34,15 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .task-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecf0f1; }
 .task-responsible { display: flex; gap: 5px; flex-wrap: wrap; }
 .responsible-tag { background: #ecf0f1; padding: 3px 8px; border-radius: 12px; font-size: 11px; color: #34495e; }
-.task-deadline { font-size: 11px; color: #e74c3c; font-weight: 600; }
+.task-deadline { font-size: 11px; font-weight: 600; }
+.task-status { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; color: white; }
+.task-status.ok { background: #27ae60; }
+.task-status.late { background: #e74c3c; }
 .add-task-btn { width: 100%; padding: 10px; background: #ecf0f1; border: 2px dashed #bdc3c7; border-radius: 6px; color: #7f8c8d; cursor: pointer; font-size: 14px; transition: all 0.3s; }
 .add-task-btn:hover { background: #d5dbdb; border-color: #95a5a6; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
 .modal.active { display: flex; }
 .modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-.modal-content h2 { margin-bottom: 20px; color: #2c3e50; }
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; color: #34495e; font-weight: 600; font-size: 14px; }
-.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
-.form-group textarea { resize: vertical; min-height: 80px; }
-.button-group { display: flex; gap: 10px; margin-top: 20px; }
-.btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: opacity 0.3s; }
-.btn:hover { opacity: 0.9; }
-.btn-primary { background: #3498db; color: white; }
-.btn-secondary { background: #95a5a6; color: white; }
 .dragging { opacity: 0.5; }
 @media (max-width: 1024px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
@@ -58,7 +51,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 <body>
 <div class="container">
   <div class="header">
-    <img src="https://raw.githubusercontent.com/vitorleocl/kanban-cgf/main/logo-cgf.png" alt="CGF Logo" class="logo" id="cgfLogo">
+    <img src="https://raw.githubusercontent.com/vitorleocl/kanban-cgf/main/logo-cgf.png" alt="CGF Logo" class="logo">
     <h1>Kanban Board - Gestão de Atividades CGF</h1>
   </div>
 
@@ -68,25 +61,22 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 
   <div class="kanban-board">
-    <div class="kanban-column" data-status="todo">
+    <div class="kanban-column" data-status="todo" ondragover="allowDrop(event)" ondrop="dropTask(event, 'todo')">
       <div class="column-header red">A FAZER</div>
       <div class="task-list" id="todo-list"></div>
       <button class="add-task-btn" onclick="openModal('todo')">+ Adicionar Tarefa</button>
     </div>
-
-    <div class="kanban-column" data-status="progress">
+    <div class="kanban-column" data-status="progress" ondragover="allowDrop(event)" ondrop="dropTask(event, 'progress')">
       <div class="column-header yellow">EM ANDAMENTO</div>
       <div class="task-list" id="progress-list"></div>
       <button class="add-task-btn" onclick="openModal('progress')">+ Adicionar Tarefa</button>
     </div>
-
-    <div class="kanban-column" data-status="review">
+    <div class="kanban-column" data-status="review" ondragover="allowDrop(event)" ondrop="dropTask(event, 'review')">
       <div class="column-header blue">EM REVISÃO</div>
       <div class="task-list" id="review-list"></div>
       <button class="add-task-btn" onclick="openModal('review')">+ Adicionar Tarefa</button>
     </div>
-
-    <div class="kanban-column" data-status="done">
+    <div class="kanban-column" data-status="done" ondragover="allowDrop(event)" ondrop="dropTask(event, 'done')">
       <div class="column-header green">CONCLUÍDO</div>
       <div class="task-list" id="done-list"></div>
       <button class="add-task-btn" onclick="openModal('done')">+ Adicionar Tarefa</button>
@@ -99,35 +89,19 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   <div class="modal-content">
     <h2>Nova Tarefa</h2>
     <form id="taskForm">
-      <div class="form-group">
-        <label>Título da Tarefa</label>
-        <input type="text" id="taskTitle" required>
-      </div>
-      <div class="form-group">
-        <label>Descrição / Comentários</label>
-        <textarea id="taskDescription"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Responsáveis (separados por vírgula)</label>
-        <input type="text" id="taskResponsible" placeholder="Ex: Ana Silva, Carlos Santos">
-      </div>
-      <div class="form-group">
-        <label>Prazo</label>
-        <input type="date" id="taskDeadline">
-      </div>
-      <div class="form-group">
-        <label>Cor da Tarefa</label>
-        <select id="taskColor">
-          <option value="red">Vermelho (Urgente)</option>
-          <option value="yellow">Amarelo (Importante)</option>
-          <option value="blue">Azul (Normal)</option>
-          <option value="green">Verde (Baixa prioridade)</option>
-        </select>
-      </div>
-      <div class="button-group">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      </div>
+      <label>Título:</label><input type="text" id="taskTitle" required><br><br>
+      <label>Descrição:</label><textarea id="taskDescription"></textarea><br><br>
+      <label>Responsáveis:</label><input type="text" id="taskResponsible" placeholder="Ex: Ana, João"><br><br>
+      <label>Prazo:</label><input type="date" id="taskDeadline"><br><br>
+      <label>Cor:</label>
+      <select id="taskColor">
+        <option value="red">Vermelho</option>
+        <option value="yellow">Amarelo</option>
+        <option value="blue">Azul</option>
+        <option value="green">Verde</option>
+      </select><br><br>
+      <button type="submit">Salvar</button>
+      <button type="button" onclick="closeModal()">Cancelar</button>
     </form>
   </div>
 </div>
@@ -137,7 +111,6 @@ let currentStatus = 'todo';
 let draggedElement = null;
 let editingCard = null;
 
-// ---------- Modal ----------
 function openModal(status, card = null) {
   currentStatus = status;
   editingCard = card;
@@ -145,209 +118,123 @@ function openModal(status, card = null) {
   if (card) {
     document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
     document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
-    document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(t => t.textContent).join(', ');
-    const deadlineEl = card.querySelector('.task-deadline');
-    document.getElementById('taskDeadline').value = deadlineEl ? formatDateForInput(deadlineEl.textContent.replace('📅 ', '')) : '';
-    const colorMatch = card.className.match(/(red|yellow|blue|green)-border/);
-    document.getElementById('taskColor').value = colorMatch ? colorMatch[1] : 'red';
-  } else {
-    document.getElementById('taskForm').reset();
-  }
+    document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', ');
+    const deadline = card.querySelector('.task-deadline')?.dataset.deadline || '';
+    document.getElementById('taskDeadline').value = deadline;
+    const color = card.dataset.color || 'red';
+    document.getElementById('taskColor').value = color;
+  } else document.getElementById('taskForm').reset();
 }
 
 function closeModal() {
   document.getElementById('taskModal').classList.remove('active');
-  document.getElementById('taskForm').reset();
   editingCard = null;
 }
 
-function formatDateForInput(dateStr) {
-  const parts = dateStr.split('/');
-  if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-  return '';
-}
-
-// ---------- Criar e Editar ----------
 document.getElementById('taskForm').addEventListener('submit', e => {
   e.preventDefault();
-  const title = document.getElementById('taskTitle').value;
-  const description = document.getElementById('taskDescription').value;
-  const responsible = document.getElementById('taskResponsible').value;
-  const deadline = document.getElementById('taskDeadline').value;
-  const color = document.getElementById('taskColor').value;
+  const title = taskTitle.value;
+  const desc = taskDescription.value;
+  const resp = taskResponsible.value;
+  const deadline = taskDeadline.value;
+  const color = taskColor.value;
 
   if (editingCard) {
     editingCard.querySelector('.task-title').textContent = title;
-    editingCard.querySelector('.task-description').textContent = description;
-    const respDiv = editingCard.querySelector('.task-responsible');
-    respDiv.innerHTML = responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
-    const deadlineDiv = editingCard.querySelector('.task-deadline');
-    if (deadline) {
-      if (deadlineDiv) deadlineDiv.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
-      else {
-        const div = document.createElement('div');
-        div.className = 'task-deadline';
-        div.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
-        editingCard.querySelector('.task-meta').appendChild(div);
-      }
-    } else if (deadlineDiv) deadlineDiv.remove();
-    editingCard.className = `task-card ${color}-border`;
-    editingCard = null;
+    editingCard.querySelector('.task-description').textContent = desc;
+    editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
+    editingCard.querySelector('.task-deadline').dataset.deadline = deadline;
+    updateDeadlineStatus(editingCard, deadline);
   } else {
-    const taskCard = createTaskCard(title, description, responsible, deadline, color);
-    document.getElementById(`${currentStatus}-list`).appendChild(taskCard);
+    const card = createTaskCard(title, desc, resp, deadline, color);
+    document.getElementById(`${currentStatus}-list`).appendChild(card);
   }
-
-  saveTasksToLocalStorage();
+  saveTasks();
   closeModal();
 });
 
-// ---------- Criar Card ----------
-function createTaskCard(title, description, responsible, deadline, color) {
+function createTaskCard(title, desc, resp, deadline, color) {
   const card = document.createElement('div');
   card.className = `task-card ${color}-border`;
   card.draggable = true;
+  card.dataset.color = color;
   card.innerHTML = `
     <div class="task-title">${title}</div>
-    <div class="task-description">${description}</div>
+    <div class="task-description">${desc}</div>
     <div class="task-meta">
-      <div class="task-responsible">${responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
-      ${deadline ? `<div class="task-deadline">📅 ${new Date(deadline).toLocaleDateString('pt-BR')}</div>` : ''}
+      <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+      <div class="task-deadline" data-deadline="${deadline}"></div>
     </div>
-    <button class="edit-task-btn" style="margin-top:5px; padding:3px 6px; font-size:12px;">✏️ Editar</button>
+    <div class="task-status"></div>
+    <button onclick="openModal('${currentStatus}', this.parentElement)">✏️ Editar</button>
   `;
-  setupDragAndDrop(card);
-  card.querySelector('.edit-task-btn').addEventListener('click', () => openModal(card.closest('.kanban-column').dataset.status, card));
+  card.addEventListener('dragstart', e => { draggedElement = card; card.classList.add('dragging'); });
+  card.addEventListener('dragend', e => { draggedElement = null; card.classList.remove('dragging'); saveTasks(); });
+  updateDeadlineStatus(card, deadline);
   return card;
 }
 
-// ---------- Drag & Drop ----------
-function setupDragAndDrop(card) {
-  card.addEventListener('dragstart', () => { draggedElement = card; card.classList.add('dragging'); });
-  card.addEventListener('dragend', () => { card.classList.remove('dragging'); saveTasksToLocalStorage(); });
+function allowDrop(e) { e.preventDefault(); }
+function dropTask(e, status) {
+  e.preventDefault();
+  if (draggedElement) {
+    document.getElementById(`${status}-list`).appendChild(draggedElement);
+    saveTasks();
+  }
 }
-document.querySelectorAll('.task-list').forEach(list => {
-  list.addEventListener('dragover', e => e.preventDefault());
-  list.addEventListener('drop', e => {
-    e.preventDefault();
-    if (draggedElement) list.appendChild(draggedElement);
-    saveTasksToLocalStorage();
-  });
-});
 
-// ---------- Exportações ----------
+function updateDeadlineStatus(card, deadline) {
+  const statusDiv = card.querySelector('.task-status');
+  const dl = new Date(deadline);
+  const now = new Date();
+  if (!deadline) {
+    statusDiv.textContent = 'Sem prazo';
+    statusDiv.className = 'task-status';
+    return;
+  }
+  const diff = Math.ceil((dl - now) / (1000 * 60 * 60 * 24));
+  if (diff >= 0) {
+    statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`;
+    statusDiv.className = 'task-status ok';
+  } else {
+    statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`;
+    statusDiv.className = 'task-status late';
+  }
+}
+
 function getAllTasks() {
-  const statuses = ['todo', 'progress', 'review', 'done'];
-  const all = { todo: [], progress: [], review: [], done: [] };
-  statuses.forEach(s => {
-    document.querySelectorAll(`#${s}-list .task-card`).forEach(card => {
-      const title = card.querySelector('.task-title').textContent;
-      const description = card.querySelector('.task-description').textContent;
-      const responsible = Array.from(card.querySelectorAll('.responsible-tag')).map(t => t.textContent).join(', ');
-      const deadlineEl = card.querySelector('.task-deadline');
-      const deadline = deadlineEl ? deadlineEl.textContent.replace('📅 ', '') : '';
-      all[s].push({ title, description, responsible, deadline });
-    });
+  const lists = ['todo', 'progress', 'review', 'done'];
+  const tasks = {};
+  lists.forEach(list => {
+    tasks[list] = Array.from(document.querySelectorAll(`#${list}-list .task-card`)).map(c => ({
+      title: c.querySelector('.task-title').textContent,
+      desc: c.querySelector('.task-description').textContent,
+      resp: Array.from(c.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', '),
+      deadline: c.querySelector('.task-deadline').dataset.deadline,
+      color: c.dataset.color
+    }));
   });
-  return all;
+  return tasks;
 }
 
-// ---------- LocalStorage ----------
-function saveTasksToLocalStorage() {
-  const tasks = getAllTasks();
-  localStorage.setItem('kanbanTasks', JSON.stringify(tasks));
+function saveTasks() {
+  localStorage.setItem('kanbanTasks', JSON.stringify(getAllTasks()));
 }
-function loadTasksFromLocalStorage() {
+
+function loadTasks() {
   const saved = localStorage.getItem('kanbanTasks');
   if (saved) {
     const tasks = JSON.parse(saved);
     Object.keys(tasks).forEach(status => {
       tasks[status].forEach(t => {
-        const card = createTaskCard(t.title, t.description, t.responsible, t.deadline, getColorByStatus(status));
+        const card = createTaskCard(t.title, t.desc, t.resp, t.deadline, t.color);
         document.getElementById(`${status}-list`).appendChild(card);
       });
     });
   }
 }
-function getColorByStatus(status) {
-  switch (status) {
-    case 'todo': return 'red';
-    case 'progress': return 'yellow';
-    case 'review': return 'blue';
-    case 'done': return 'green';
-    default: return 'red';
-  }
-}
 
-// ---------- Export PDF ----------
-function exportToPDF() {
-  const tasks = getAllTasks();
-  const date = new Date().toLocaleDateString('pt-BR');
-  let html = `
-    <html><head><meta charset="UTF-8"><title>Relatório Kanban</title>
-    <style>
-      body { font-family: Arial; padding: 40px; background: #f5f7fa; }
-      h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-      .section { margin-bottom: 25px; }
-      .section-title { padding: 8px 12px; color: #fff; border-radius: 5px; margin-bottom: 10px; font-weight: bold; }
-      .red { background: #e74c3c; } .yellow { background: #f39c12; } .blue { background: #3498db; } .green { background: #27ae60; }
-      .task { background: #fff; padding: 10px 15px; border-left: 5px solid; border-radius: 5px; margin-bottom: 8px; }
-      .red-border { border-left-color: #e74c3c; } .yellow-border { border-left-color: #f39c12; } .blue-border { border-left-color: #3498db; } .green-border { border-left-color: #27ae60; }
-      .task-title { font-weight: bold; color: #2c3e50; }
-      .task-meta { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
-    </style></head><body>
-    <h1>📋 Relatório Kanban - CGF</h1>
-    <div style="text-align:center; margin-bottom:20px;">Gerado em ${date}</div>
-  `;
-  const sections = [
-    { key: 'todo', title: 'A FAZER', color: 'red', border: 'red-border' },
-    { key: 'progress', title: 'EM ANDAMENTO', color: 'yellow', border: 'yellow-border' },
-    { key: 'review', title: 'EM REVISÃO', color: 'blue', border: 'blue-border' },
-    { key: 'done', title: 'CONCLUÍDO', color: 'green', border: 'green-border' }
-  ];
-  sections.forEach(s => {
-    html += `<div class="section"><div class="section-title ${s.color}">${s.title} (${tasks[s.key].length})</div>`;
-    if (tasks[s.key].length === 0) html += `<div style="color:#7f8c8d;font-style:italic;">Nenhuma tarefa</div>`;
-    tasks[s.key].forEach(t => {
-      html += `<div class="task ${s.border}"><div class="task-title">${t.title}</div>${t.description ? `<div>${t.description}</div>` : ''}<div class="task-meta">👤 ${t.responsible || '-'} | 📅 ${t.deadline || 'Sem prazo'}</div></div>`;
-    });
-    html += `</div>`;
-  });
-  html += `</body></html>`;
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
-  w.print();
-}
-
-// ---------- Export WhatsApp ----------
-function exportToWhatsApp() {
-  const tasks = getAllTasks();
-  const date = new Date().toLocaleDateString('pt-BR');
-  let msg = `📋 KANBAN CGF - Atualizado em ${date}\n\n`;
-  const sections = [
-    { key: 'todo', emoji: '🔴 A FAZER' },
-    { key: 'progress', emoji: '🟡 EM ANDAMENTO' },
-    { key: 'review', emoji: '🔵 EM REVISÃO' },
-    { key: 'done', emoji: '🟢 CONCLUÍDO' }
-  ];
-  sections.forEach(s => {
-    msg += `${s.emoji} (${tasks[s.key].length})\n`;
-    tasks[s.key].forEach(t => {
-      msg += `• ${t.title}\n`;
-      if (t.description) msg += `${t.description}\n`;
-      if (t.responsible) msg += `👤 ${t.responsible}\n`;
-      if (t.deadline) msg += `📅 ${t.deadline}\n`;
-    });
-    if (tasks[s.key].length === 0) msg += `Nenhuma tarefa\n`;
-    msg += `\n`;
-  });
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-// ---------- Inicialização ----------
-window.onclick = e => { const modal = document.getElementById('taskModal'); if (e.target === modal) closeModal(); };
-document.addEventListener('DOMContentLoaded', loadTasksFromLocalStorage);
+document.addEventListener('DOMContentLoaded', loadTasks);
 </script>
 </body>
 </html>
