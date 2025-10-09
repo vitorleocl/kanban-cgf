@@ -42,7 +42,22 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .add-task-btn:hover { background: #d5dbdb; border-color: #95a5a6; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
 .modal.active { display: flex; }
-.modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+.modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: fadeIn 0.3s ease; }
+.modal-content h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+.modal-content label { font-weight: bold; color: #34495e; display: block; margin-bottom: 5px; }
+.modal-content input, .modal-content textarea, .modal-content select {
+  width: 100%; padding: 10px; margin-bottom: 15px;
+  border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px;
+}
+.modal-content button {
+  padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
+  font-weight: 600; margin-right: 10px;
+}
+.modal-content button[type="submit"] { background: #27ae60; color: white; }
+.modal-content button[type="submit"]:hover { background: #2ecc71; }
+.modal-content button[type="button"] { background: #e74c3c; color: white; }
+.modal-content button[type="button"]:hover { background: #c0392b; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .dragging { opacity: 0.5; }
 @media (max-width: 1024px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
@@ -84,29 +99,41 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Modal aprimorado -->
 <div class="modal" id="taskModal">
   <div class="modal-content">
     <h2>Nova Tarefa</h2>
     <form id="taskForm">
-      <label>Título:</label><input type="text" id="taskTitle" required><br><br>
-      <label>Descrição:</label><textarea id="taskDescription"></textarea><br><br>
-      <label>Responsáveis:</label><input type="text" id="taskResponsible" placeholder="Ex: Ana, João"><br><br>
-      <label>Prazo:</label><input type="date" id="taskDeadline"><br><br>
+      <label>Título:</label>
+      <input type="text" id="taskTitle" required>
+
+      <label>Descrição:</label>
+      <textarea id="taskDescription" rows="3"></textarea>
+
+      <label>Responsáveis:</label>
+      <input type="text" id="taskResponsible" placeholder="Ex: Ana, João">
+
+      <label>Prazo:</label>
+      <input type="date" id="taskDeadline">
+
       <label>Cor:</label>
       <select id="taskColor">
         <option value="red">Vermelho</option>
         <option value="yellow">Amarelo</option>
         <option value="blue">Azul</option>
         <option value="green">Verde</option>
-      </select><br><br>
-      <button type="submit">Salvar</button>
-      <button type="button" onclick="closeModal()">Cancelar</button>
+      </select>
+
+      <div style="text-align: center;">
+        <button type="submit">Salvar</button>
+        <button type="button" onclick="closeModal()">Cancelar</button>
+      </div>
     </form>
   </div>
 </div>
 
 <script>
+// --- código JS idêntico ao anterior ---
 let currentStatus = 'todo';
 let draggedElement = null;
 let editingCard = null;
@@ -126,10 +153,7 @@ function openModal(status, card = null) {
   } else document.getElementById('taskForm').reset();
 }
 
-function closeModal() {
-  document.getElementById('taskModal').classList.remove('active');
-  editingCard = null;
-}
+function closeModal() { document.getElementById('taskModal').classList.remove('active'); editingCard = null; }
 
 document.getElementById('taskForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -149,8 +173,7 @@ document.getElementById('taskForm').addEventListener('submit', e => {
     const card = createTaskCard(title, desc, resp, deadline, color);
     document.getElementById(`${currentStatus}-list`).appendChild(card);
   }
-  saveTasks();
-  closeModal();
+  saveTasks(); closeModal();
 });
 
 function createTaskCard(title, desc, resp, deadline, color) {
@@ -187,19 +210,10 @@ function updateDeadlineStatus(card, deadline) {
   const statusDiv = card.querySelector('.task-status');
   const dl = new Date(deadline);
   const now = new Date();
-  if (!deadline) {
-    statusDiv.textContent = 'Sem prazo';
-    statusDiv.className = 'task-status';
-    return;
-  }
+  if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
   const diff = Math.ceil((dl - now) / (1000 * 60 * 60 * 24));
-  if (diff >= 0) {
-    statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`;
-    statusDiv.className = 'task-status ok';
-  } else {
-    statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`;
-    statusDiv.className = 'task-status late';
-  }
+  if (diff >= 0) { statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`; statusDiv.className = 'task-status ok'; }
+  else { statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`; statusDiv.className = 'task-status late'; }
 }
 
 function getAllTasks() {
@@ -217,10 +231,7 @@ function getAllTasks() {
   return tasks;
 }
 
-function saveTasks() {
-  localStorage.setItem('kanbanTasks', JSON.stringify(getAllTasks()));
-}
-
+function saveTasks() { localStorage.setItem('kanbanTasks', JSON.stringify(getAllTasks())); }
 function loadTasks() {
   const saved = localStorage.getItem('kanbanTasks');
   if (saved) {
@@ -233,7 +244,6 @@ function loadTasks() {
     });
   }
 }
-
 document.addEventListener('DOMContentLoaded', loadTasks);
 </script>
 </body>
