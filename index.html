@@ -1,383 +1,271 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanban Board - Gestão de Atividades CGF</title>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
-.container { max-width: 1400px; margin: 0 auto; }
-.header { text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-.logo { max-width: 200px; height: auto; margin-bottom: 15px; display: block; margin: 0 auto 15px auto; }
-h1 { color: #2c3e50; font-size: 28px; margin: 0; }
-.export-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
-.btn-export { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
-.btn-pdf { background: #e74c3c; color: white; }
-.btn-whatsapp { background: #25D366; color: white; }
-.btn-export:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-.kanban-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-.kanban-column { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); min-height: 500px; }
-.column-header { font-weight: bold; font-size: 16px; padding: 12px; border-radius: 6px; margin-bottom: 15px; color: white; text-align: center; }
-.red { background: #e74c3c; }
-.yellow { background: #f39c12; }
-.blue { background: #3498db; }
-.green { background: #27ae60; }
-.task-card { background: white; border-left: 4px solid; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: move; transition: transform 0.2s, box-shadow 0.2s; }
-.task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-.task-card.red-border { border-left-color: #e74c3c; }
-.task-card.yellow-border { border-left-color: #f39c12; }
-.task-card.blue-border { border-left-color: #3498db; }
-.task-card.green-border { border-left-color: #27ae60; }
-.task-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #2c3e50; }
-.task-description { font-size: 12px; color: #7f8c8d; margin-bottom: 10px; line-height: 1.4; }
-.task-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecf0f1; }
-.task-responsible { display: flex; gap: 5px; flex-wrap: wrap; }
-.responsible-tag { background: #ecf0f1; padding: 3px 8px; border-radius: 12px; font-size: 11px; color: #34495e; }
-.task-deadline { font-size: 11px; color: #e74c3c; font-weight: 600; }
-.add-task-btn { width: 100%; padding: 10px; background: #ecf0f1; border: 2px dashed #bdc3c7; border-radius: 6px; color: #7f8c8d; cursor: pointer; font-size: 14px; transition: all 0.3s; }
-.add-task-btn:hover { background: #d5dbdb; border-color: #95a5a6; }
-.modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
-.modal.active { display: flex; }
-.modal-content { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-.modal-content h2 { margin-bottom: 20px; color: #2c3e50; }
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; color: #34495e; font-weight: 600; font-size: 14px; }
-.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
-.form-group textarea { resize: vertical; min-height: 80px; }
-.button-group { display: flex; gap: 10px; margin-top: 20px; }
-.btn { flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: opacity 0.3s; }
-.btn:hover { opacity: 0.9; }
-.btn-primary { background: #3498db; color: white; }
-.btn-secondary { background: #95a5a6; color: white; }
-.dragging { opacity: 0.5; }
-@media (max-width: 1024px) { .kanban-board { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KANBAN - GESTÃO DE ATIVIDADES CGF</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+
+    header {
+      background: #004aad;
+      color: white;
+      padding: 20px 0;
+      font-size: 22px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    header img {
+      height: 45px;
+    }
+
+    #kanban {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 15px;
+      padding: 20px;
+      flex-wrap: wrap;
+    }
+
+    .column {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 15px;
+      width: 270px;
+      min-height: 400px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .column h2 {
+      margin-top: 0;
+      font-size: 18px;
+      background: #004aad;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .task {
+      background: #e9eef5;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: grab;
+      text-align: left;
+    }
+
+    .task.dragging {
+      opacity: 0.5;
+    }
+
+    button {
+      margin: 10px 5px;
+      padding: 10px 15px;
+      background: #004aad;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #00347a;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 300px;
+      text-align: left;
+    }
+
+    .close {
+      float: right;
+      font-size: 22px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <img src="https://raw.githubusercontent.com/vitorleocl/kanban-cgf/main/logo-cgf.png" alt="CGF Logo" class="logo" id="cgfLogo">
-    <h1>Kanban Board - Gestão de Atividades CGF</h1>
+
+  <header>
+    <img src="logo.png" alt="Logo CGF">
+    KANBAN - GESTÃO DE ATIVIDADES CGF
+  </header>
+
+  <div>
+    <button onclick="openModal()">➕ Adicionar Tarefa</button>
+    <button onclick="exportarWhatsApp()">📲 Compartilhar WhatsApp</button>
+    <button onclick="exportarPDF()">📄 Exportar PDF</button>
   </div>
 
-  <div class="export-buttons">
-    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF</button>
-    <button class="btn-export btn-whatsapp" onclick="exportToWhatsApp()">💬 Compartilhar WhatsApp</button>
-  </div>
-
-  <div class="kanban-board">
-    <div class="kanban-column" data-status="todo">
-      <div class="column-header red">A FAZER</div>
-      <div class="task-list" id="todo-list"></div>
-      <button class="add-task-btn" onclick="openModal('todo')">+ Adicionar Tarefa</button>
+  <div id="kanban">
+    <div class="column" id="todo" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>🔴 A FAZER</h2>
     </div>
 
-    <div class="kanban-column" data-status="progress">
-      <div class="column-header yellow">EM ANDAMENTO</div>
-      <div class="task-list" id="progress-list"></div>
-      <button class="add-task-btn" onclick="openModal('progress')">+ Adicionar Tarefa</button>
+    <div class="column" id="doing" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>🟡 EM ANDAMENTO</h2>
     </div>
 
-    <div class="kanban-column" data-status="review">
-      <div class="column-header blue">EM REVISÃO</div>
-      <div class="task-list" id="review-list"></div>
-      <button class="add-task-btn" onclick="openModal('review')">+ Adicionar Tarefa</button>
+    <div class="column" id="review" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>🔵 EM REVISÃO</h2>
     </div>
 
-    <div class="kanban-column" data-status="done">
-      <div class="column-header green">CONCLUÍDO</div>
-      <div class="task-list" id="done-list"></div>
-      <button class="add-task-btn" onclick="openModal('done')">+ Adicionar Tarefa</button>
+    <div class="column" id="done" ondrop="drop(event)" ondragover="allowDrop(event)">
+      <h2>🟢 CONCLUÍDO</h2>
     </div>
   </div>
-</div>
 
-<!-- Modal -->
-<div class="modal" id="taskModal">
-  <div class="modal-content">
-    <h2>Nova Tarefa</h2>
-    <form id="taskForm">
-      <div class="form-group">
-        <label>Título da Tarefa</label>
-        <input type="text" id="taskTitle" required>
-      </div>
-      <div class="form-group">
-        <label>Descrição / Comentários</label>
-        <textarea id="taskDescription"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Responsáveis (separados por vírgula)</label>
-        <input type="text" id="taskResponsible" placeholder="Ex: Ana Silva, Carlos Santos">
-      </div>
-      <div class="form-group">
-        <label>Prazo</label>
-        <input type="date" id="taskDeadline">
-      </div>
-      <div class="form-group">
-        <label>Cor da Tarefa</label>
-        <select id="taskColor">
-          <option value="red">Vermelho (Urgente)</option>
-          <option value="yellow">Amarelo (Importante)</option>
-          <option value="blue">Azul (Normal)</option>
-          <option value="green">Verde (Baixa prioridade)</option>
-        </select>
-      </div>
-      <div class="button-group">
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      </div>
-    </form>
+  <!-- Modal -->
+  <div id="taskModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <h3 id="modalTitle">Adicionar Tarefa</h3>
+      <label>Título:</label>
+      <input type="text" id="taskTitle" style="width:100%">
+      <label>Descrição:</label>
+      <textarea id="taskDesc" rows="3" style="width:100%"></textarea>
+      <label>Responsável:</label>
+      <input type="text" id="taskResp" style="width:100%">
+      <label>Prazo:</label>
+      <input type="date" id="taskDate" style="width:100%">
+      <button id="saveTaskBtn" onclick="saveTask()">Salvar</button>
+    </div>
   </div>
-</div>
 
-<script>
-let currentStatus = 'todo';
-let draggedElement = null;
-let editingCard = null;
+  <script>
+    let editingTask = null;
 
-// ---------- Modal ----------
-function openModal(status, card = null) {
-  currentStatus = status;
-  editingCard = card;
-  document.getElementById('taskModal').classList.add('active');
-  if (card) {
-    document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
-    document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
-    document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(t => t.textContent).join(', ');
-    const deadlineEl = card.querySelector('.task-deadline');
-    document.getElementById('taskDeadline').value = deadlineEl ? formatDateForInput(deadlineEl.textContent.replace('📅 ', '')) : '';
-    const colorMatch = card.className.match(/(red|yellow|blue|green)-border/);
-    document.getElementById('taskColor').value = colorMatch ? colorMatch[1] : 'red';
-  } else {
-    document.getElementById('taskForm').reset();
-  }
-}
-
-function closeModal() {
-  document.getElementById('taskModal').classList.remove('active');
-  document.getElementById('taskForm').reset();
-  editingCard = null;
-}
-
-function formatDateForInput(dateStr) {
-  const parts = dateStr.split('/');
-  if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-  return '';
-}
-
-// ---------- Criar e Editar ----------
-document.getElementById('taskForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const title = document.getElementById('taskTitle').value;
-  const description = document.getElementById('taskDescription').value;
-  const responsible = document.getElementById('taskResponsible').value;
-  const deadline = document.getElementById('taskDeadline').value;
-  const color = document.getElementById('taskColor').value;
-
-  if (editingCard) {
-    editingCard.querySelector('.task-title').textContent = title;
-    editingCard.querySelector('.task-description').textContent = description;
-    const respDiv = editingCard.querySelector('.task-responsible');
-    respDiv.innerHTML = responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
-    const deadlineDiv = editingCard.querySelector('.task-deadline');
-    if (deadline) {
-      if (deadlineDiv) deadlineDiv.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
-      else {
-        const div = document.createElement('div');
-        div.className = 'task-deadline';
-        div.textContent = `📅 ${new Date(deadline).toLocaleDateString('pt-BR')}`;
-        editingCard.querySelector('.task-meta').appendChild(div);
+    function openModal(task = null) {
+      document.getElementById('taskModal').style.display = 'block';
+      document.getElementById('modalTitle').innerText = task ? 'Editar Tarefa' : 'Adicionar Tarefa';
+      editingTask = task;
+      if (task) {
+        document.getElementById('taskTitle').value = task.querySelector('h4').innerText;
+        document.getElementById('taskDesc').value = task.querySelector('p').innerText;
+        document.getElementById('taskResp').value = task.querySelector('.responsavel').innerText.replace('👤 ', '');
+        document.getElementById('taskDate').value = task.querySelector('.prazo').innerText.replace('📅 ', '');
+      } else {
+        document.getElementById('taskTitle').value = '';
+        document.getElementById('taskDesc').value = '';
+        document.getElementById('taskResp').value = '';
+        document.getElementById('taskDate').value = '';
       }
-    } else if (deadlineDiv) deadlineDiv.remove();
-    editingCard.className = `task-card ${color}-border`;
-    editingCard = null;
-  } else {
-    const taskCard = createTaskCard(title, description, responsible, deadline, color);
-    document.getElementById(`${currentStatus}-list`).appendChild(taskCard);
-  }
-
-  saveTasksToLocalStorage();
-  closeModal();
-});
-
-// ---------- Criar Card ----------
-function createTaskCard(title, description, responsible, deadline, color) {
-  const card = document.createElement('div');
-  card.className = `task-card ${color}-border`;
-  card.draggable = true;
-  card.innerHTML = `
-    <div class="task-title">${title}</div>
-    <div class="task-description">${description}</div>
-    <div class="task-meta">
-      <div class="task-responsible">${responsible.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
-      ${deadline ? `<div class="task-deadline">📅 ${new Date(deadline).toLocaleDateString('pt-BR')}</div>` : ''}
-    </div>
-    <button class="edit-task-btn" style="margin-top:5px; padding:3px 6px; font-size:12px;">✏️ Editar</button>
-  `;
-  setupDragAndDrop(card);
-  card.querySelector('.edit-task-btn').addEventListener('click', () => openModal(card.closest('.kanban-column').dataset.status, card));
-  return card;
-}
-
-// ---------- Drag & Drop ----------
-function setupDragAndDrop(card) {
-  card.addEventListener('dragstart', () => { draggedElement = card; card.classList.add('dragging'); });
-  card.addEventListener('dragend', () => { card.classList.remove('dragging'); saveTasksToLocalStorage(); });
-}
-document.querySelectorAll('.task-list').forEach(list => {
-  list.addEventListener('dragover', e => e.preventDefault());
-  list.addEventListener('drop', e => {
-    e.preventDefault();
-    if (draggedElement) list.appendChild(draggedElement);
-    saveTasksToLocalStorage();
-  });
-});
-
-// ---------- Exportações ----------
-function getAllTasks() {
-  const statuses = ['todo', 'progress', 'review', 'done'];
-  const all = { todo: [], progress: [], review: [], done: [] };
-  statuses.forEach(s => {
-    document.querySelectorAll(`#${s}-list .task-card`).forEach(card => {
-      const title = card.querySelector('.task-title').textContent;
-      const description = card.querySelector('.task-description').textContent;
-      const responsible = Array.from(card.querySelectorAll('.responsible-tag')).map(t => t.textContent).join(', ');
-      const deadlineEl = card.querySelector('.task-deadline');
-      const deadline = deadlineEl ? deadlineEl.textContent.replace('📅 ', '') : '';
-      all[s].push({ title, description, responsible, deadline });
-    });
-  });
-  return all;
-}
-
-// ---------- LocalStorage ----------
-function saveTasksToLocalStorage() {
-  const tasks = getAllTasks();
-  localStorage.setItem('kanbanTasks', JSON.stringify(tasks));
-}
-function loadTasksFromLocalStorage() {
-  const saved = localStorage.getItem('kanbanTasks');
-  if (saved) {
-    const tasks = JSON.parse(saved);
-    Object.keys(tasks).forEach(status => {
-      tasks[status].forEach(t => {
-        const card = createTaskCard(t.title, t.description, t.responsible, t.deadline, getColorByStatus(status));
-        document.getElementById(`${status}-list`).appendChild(card);
-      });
-    });
-  }
-}
-function getColorByStatus(status) {
-  switch (status) {
-    case 'todo': return 'red';
-    case 'progress': return 'yellow';
-    case 'review': return 'blue';
-    case 'done': return 'green';
-    default: return 'red';
-  }
-}
-
-// ---------- Export PDF ----------
-function exportToPDF() {
-  const tasks = getAllTasks();
-  const date = new Date().toLocaleDateString('pt-BR');
-  let html = `
-    <html><head><meta charset="UTF-8"><title>Relatório Kanban</title>
-    <style>
-      body { font-family: Arial; padding: 40px; background: #f5f7fa; }
-      h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
-      .section { margin-bottom: 25px; }
-      .section-title { padding: 8px 12px; color: #fff; border-radius: 5px; margin-bottom: 10px; font-weight: bold; }
-      .red { background: #e74c3c; } .yellow { background: #f39c12; } .blue { background: #3498db; } .green { background: #27ae60; }
-      .task { background: #fff; padding: 10px 15px; border-left: 5px solid; border-radius: 5px; margin-bottom: 8px; }
-      .red-border { border-left-color: #e74c3c; } .yellow-border { border-left-color: #f39c12; } .blue-border { border-left-color: #3498db; } .green-border { border-left-color: #27ae60; }
-      .task-title { font-weight: bold; color: #2c3e50; }
-      .task-meta { font-size: 12px; color: #7f8c8d; margin-top: 4px; }
-    </style></head><body>
-    <h1>📋 Relatório Kanban - CGF</h1>
-    <div style="text-align:center; margin-bottom:20px;">Gerado em ${date}</div>
-  `;
-  const sections = [
-    { key: 'todo', title: 'A FAZER', color: 'red', border: 'red-border' },
-    { key: 'progress', title: 'EM ANDAMENTO', color: 'yellow', border: 'yellow-border' },
-    { key: 'review', title: 'EM REVISÃO', color: 'blue', border: 'blue-border' },
-    { key: 'done', title: 'CONCLUÍDO', color: 'green', border: 'green-border' }
-  ];
-  sections.forEach(s => {
-    html += `<div class="section"><div class="section-title ${s.color}">${s.title} (${tasks[s.key].length})</div>`;
-    if (tasks[s.key].length === 0) html += `<div style="color:#7f8c8d;font-style:italic;">Nenhuma tarefa</div>`;
-    tasks[s.key].forEach(t => {
-      html += `<div class="task ${s.border}"><div class="task-title">${t.title}</div>${t.description ? `<div>${t.description}</div>` : ''}<div class="task-meta">👤 ${t.responsible || '-'} | 📅 ${t.deadline || 'Sem prazo'}</div></div>`;
-    });
-    html += `</div>`;
-  });
-  html += `</body></html>`;
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
-  w.print();
-}
-
-// ---------- Export WhatsApp ----------
-function exportToWhatsApp() {
-  const tasks = getAllTasks();
-  const date = new Date().toLocaleDateString('pt-BR');
-  let msg = `📋 KANBAN CGF - Atualizado em ${date}\n\n`;
-  const sections = [
-    { key: 'todo', emoji: '🔴 A FAZER' },
-    { key: 'progress', emoji: '🟡 EM ANDAMENTO' },
-    { key: 'review', emoji: '🔵 EM REVISÃO' },
-    { key: 'done', emoji: '🟢 CONCLUÍDO' }
-  ];
-  sections.forEach(s => {
-    msg += `${s.emoji} (${tasks[s.key].length})\n`;
-    tasks[s.key].forEach(t => {
-      msg += `• ${t.title}\n`;
-      if (t.description) msg += `${t.description}\n`;
-      if (t.responsible) msg += `👤 ${t.responsible}\n`;
-      if (t.deadline) msg += `📅 ${t.deadline}\n`;
-    });
-    if (tasks[s.key].length === 0) msg += `Nenhuma tarefa\n`;
-    msg += `\n`;
-  });
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-}
-
-  // ---------- Drag & Drop ----------
-let draggedTask = null;
-
-document.addEventListener('dragstart', e => {
-  if (e.target.classList.contains('task-card')) {
-    draggedTask = e.target;
-    e.target.classList.add('dragging');
-  }
-});
-
-document.addEventListener('dragend', e => {
-  if (draggedTask) {
-    draggedTask.classList.remove('dragging');
-    draggedTask = null;
-    saveTasksToLocalStorage(); // salva após mover
-  }
-});
-
-document.querySelectorAll('.task-list').forEach(list => {
-  list.addEventListener('dragover', e => e.preventDefault());
-  list.addEventListener('drop', e => {
-    e.preventDefault();
-    if (draggedTask) {
-      list.appendChild(draggedTask);
-      saveTasksToLocalStorage(); // salva após soltar
     }
-  });
-});
 
+    function closeModal() {
+      document.getElementById('taskModal').style.display = 'none';
+    }
 
-// ---------- Inicialização ----------
-window.onclick = e => { const modal = document.getElementById('taskModal'); if (e.target === modal) closeModal(); };
-document.addEventListener('DOMContentLoaded', loadTasksFromLocalStorage);
-</script>
+    function saveTask() {
+      const title = document.getElementById('taskTitle').value;
+      const desc = document.getElementById('taskDesc').value;
+      const resp = document.getElementById('taskResp').value;
+      const date = document.getElementById('taskDate').value;
+
+      if (!title) return alert('Preencha o título da tarefa.');
+
+      if (editingTask) {
+        editingTask.querySelector('h4').innerText = title;
+        editingTask.querySelector('p').innerText = desc;
+        editingTask.querySelector('.responsavel').innerText = '👤 ' + resp;
+        editingTask.querySelector('.prazo').innerText = '📅 ' + date;
+      } else {
+        const task = document.createElement('div');
+        task.className = 'task';
+        task.draggable = true;
+        task.innerHTML = `<h4>${title}</h4><p>${desc}</p><div class='responsavel'>👤 ${resp}</div><div class='prazo'>📅 ${date}</div>`;
+        task.addEventListener('dblclick', () => openModal(task));
+        task.addEventListener('dragstart', drag);
+        document.getElementById('todo').appendChild(task);
+      }
+      closeModal();
+      saveTasksToLocalStorage();
+    }
+
+    function allowDrop(ev) { ev.preventDefault(); }
+    function drag(ev) { ev.dataTransfer.setData('text', ev.target.outerHTML); ev.target.remove(); }
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData('text');
+      ev.target.closest('.column').innerHTML += data;
+      saveTasksToLocalStorage();
+    }
+
+    function saveTasksToLocalStorage() {
+      const kanbanData = {};
+      document.querySelectorAll('.column').forEach(col => {
+        kanbanData[col.id] = col.innerHTML;
+      });
+      localStorage.setItem('kanbanData', JSON.stringify(kanbanData));
+    }
+
+    function loadTasksFromLocalStorage() {
+      const data = JSON.parse(localStorage.getItem('kanbanData'));
+      if (data) {
+        for (const id in data) {
+          document.getElementById(id).innerHTML = data[id];
+        }
+        document.querySelectorAll('.task').forEach(task => {
+          task.addEventListener('dblclick', () => openModal(task));
+          task.addEventListener('dragstart', drag);
+        });
+      }
+    }
+
+    function exportarWhatsApp() {
+      let texto = '📋 *KANBAN - GESTÃO DE ATIVIDADES CGF*\nAtualizado em: ' + new Date().toLocaleDateString('pt-BR') + '\n\n';
+      document.querySelectorAll('.column').forEach(col => {
+        const titulo = col.querySelector('h2').innerText;
+        const tarefas = col.querySelectorAll('.task');
+        texto += titulo + ` (${tarefas.length})\n──────────────────────────────\n`;
+        tarefas.forEach(t => {
+          texto += `📝 ${t.querySelector('h4').innerText}\n${t.querySelector('p').innerText}\n${t.querySelector('.responsavel').innerText}\n${t.querySelector('.prazo').innerText}\n\n`;
+        });
+      });
+      texto += 'Relatório gerado automaticamente pelo Sistema Kanban CGF';
+      window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`);
+    }
+
+    function exportarPDF() {
+      const conteudo = document.getElementById('kanban').innerHTML;
+      const janela = window.open('', '_blank');
+      janela.document.write(`<html><head><title>Relatório Kanban</title>
+      <style>
+        body { font-family: Arial; }
+        .column { border:1px solid #ccc; border-radius:10px; padding:10px; margin:10px; }
+        h2 { background:#004aad; color:white; padding:5px; border-radius:6px; }
+        .task { background:#e9eef5; padding:8px; border-radius:8px; margin-bottom:8px; }
+      </style></head><body>${conteudo}</body></html>`);
+      janela.print();
+    }
+
+    loadTasksFromLocalStorage();
+  </script>
 </body>
 </html>
