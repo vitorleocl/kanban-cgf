@@ -4,7 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanban Board - Gestão de Atividades CGF</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
+/* ... (Seu CSS completo, sem alterações nesta seção) ... */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
 .container { max-width: 1400px; margin: 0 auto; }
@@ -161,7 +166,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Exporta as referências globais para o script principal
+    // Exporta as referências globais
     window.db = db;
     window.collection = collection;
     window.addDoc = addDoc;
@@ -193,7 +198,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         editingCard = card;
         document.getElementById('taskModal').classList.add('active');
         if (card) {
-            // Preencher o modal para edição
             document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
             document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
             
@@ -205,9 +209,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             const color = card.dataset.color || 'red';
             document.getElementById('taskColor').value = color;
         } else {
-            // Resetar o modal para nova tarefa
             document.getElementById('taskForm').reset();
-            document.getElementById('taskColor').value = 'red'; // Cor padrão
+            document.getElementById('taskColor').value = 'red';
         }
     }
 
@@ -221,7 +224,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         card.className = `task-card ${color}-border`;
         card.draggable = true;
         card.dataset.color = color;
-        card.dataset.taskId = id; // ID do Firestore é crucial
+        card.dataset.taskId = id; 
         card.dataset.status = status;
         card.innerHTML = `
             <div class="task-title">${title}</div>
@@ -265,8 +268,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     function allowDrop(e) { e.preventDefault(); }
 
-    // --- Funções do Firestore (CRUD) ---
-
     // Lida com o DROP (arrastar e soltar)
     async function dropTask(e, newStatus) {
         e.preventDefault();
@@ -291,20 +292,13 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         const currentTaskStatus = editingCard ? editingCard.dataset.status : currentStatus;
 
         const taskData = {
-            title,
-            desc,
-            resp,
-            deadline,
-            color,
-            status: currentTaskStatus
+            title, desc, resp, deadline, color, status: currentTaskStatus
         };
 
         if (editingCard) {
-            // Edição (UPDATE)
             const taskId = editingCard.dataset.taskId;
             await updateTask(taskId, taskData);
 
-            // Atualiza a UI localmente (para evitar recarregar a página inteira)
             editingCard.querySelector('.task-title').textContent = title;
             editingCard.querySelector('.task-description').textContent = desc;
             editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
@@ -313,19 +307,17 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             updateDeadlineStatus(editingCard, deadline);
 
         } else {
-            // Criação (CREATE)
             await addTask(currentStatus, taskData);
         }
         
         closeModal();
-        await loadTasks(); // Recarrega para garantir que a nova tarefa apareça
+        await loadTasks();
     });
 
     // Carregar todas as tarefas (READ)
     async function loadTasks() {
         if (!window.db || !window.getDocs || !window.collection) return; 
 
-        // Limpa todas as colunas
         ['todo', 'progress', 'review', 'done'].forEach(list => {
             document.getElementById(`${list}-list`).innerHTML = '';
         });
@@ -340,13 +332,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
                 
                 if (data.status && ['todo', 'progress', 'review', 'done'].includes(data.status)) {
                     const card = createTaskCard(
-                        id,
-                        data.title,
-                        data.desc,
-                        data.resp,
-                        data.deadline,
-                        data.status,
-                        data.color
+                        id, data.title, data.desc, data.resp, data.deadline, data.status, data.color
                     );
                     document.getElementById(`${data.status}-list`).appendChild(card);
                 }
@@ -355,64 +341,123 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             console.error("Erro ao carregar tarefas: ", e);
         }
     }
-    // Torna a função loadTasks global para ser chamada pelo script module
+    // Torna a função loadTasks global
     window.loadTasks = loadTasks;
 
 
-    // Adicionar uma nova tarefa (CREATE)
+    // Adicionar/Atualizar/Excluir (CREATE, UPDATE, DELETE)
     async function addTask(status, data) {
         try {
-            await addDoc(collection(db, "tasks"), {
-                ...data,
-                status: status, 
-                createdAt: new Date().toISOString()
-            });
-        } catch (e) {
-            console.error("Erro ao adicionar documento: ", e);
-        }
+            await addDoc(collection(db, "tasks"), { ...data, status: status, createdAt: new Date().toISOString() });
+        } catch (e) { console.error("Erro ao adicionar documento: ", e); }
     }
-
-    // Atualizar uma tarefa existente (UPDATE - Edição do modal)
     async function updateTask(id, data) {
         try {
             const taskRef = doc(db, "tasks", id);
             await updateDoc(taskRef, data);
-        } catch (e) {
-            console.error("Erro ao atualizar documento: ", e);
-        }
+        } catch (e) { console.error("Erro ao atualizar documento: ", e); }
     }
-
-    // Atualizar o status da tarefa (UPDATE - Arrastar e soltar)
     async function updateTaskStatus(id, newStatus) {
         try {
             const taskRef = doc(db, "tasks", id);
-            await updateDoc(taskRef, {
-                status: newStatus
-            });
-        } catch (e) {
-            console.error("Erro ao atualizar status: ", e);
-        }
+            await updateDoc(taskRef, { status: newStatus });
+        } catch (e) { console.error("Erro ao atualizar status: ", e); }
     }
-
-    // Excluir uma tarefa (DELETE)
     async function deleteTask(id) {
         if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
-
         try {
             await deleteDoc(doc(db, "tasks", id));
-            // Remove da UI
             const cardToRemove = document.querySelector(`[data-task-id="${id}"]`);
-            if (cardToRemove) {
-                cardToRemove.remove();
-            }
-        } catch (e) {
-            console.error("Erro ao excluir documento: ", e);
-        }
+            if (cardToRemove) { cardToRemove.remove(); }
+        } catch (e) { console.error("Erro ao excluir documento: ", e); }
     }
 
-    // --- Funções de exportação (Mock) ---
-    function exportToPDF() { alert('Funcionalidade de Exportar PDF não implementada.'); }
-    function exportToWhatsApp() { alert('Funcionalidade de Compartilhar WhatsApp não implementada.'); }
+    // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
+    
+    // EXPORTAR PDF (USANDO html2canvas e jsPDF)
+    function exportToPDF() {
+        const input = document.querySelector('.container'); 
+
+        // Temporariamente esconde botões e elementos que não devem ir para o PDF
+        document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = 'none');
+        
+        // Renderiza o conteúdo da div container para um canvas (imagem)
+        html2canvas(input, { 
+            scale: 2, 
+            useCORS: true 
+        }).then(canvas => {
+            const { jsPDF } = window.jspdf;
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+
+            const ratio = imgWidth / pdfWidth;
+            const finalImgHeight = imgHeight / ratio;
+
+            // Adiciona a imagem no PDF
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
+            pdf.save("Kanban_CGF.pdf");
+
+            // RESTAURA a exibição dos botões
+            document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = '');
+        });
+    }
+
+    // COMPARTILHAR WHATSAPP (GERA RESUMO)
+    async function exportToWhatsApp() {
+        if (!window.db || !window.getDocs || !window.collection) {
+            alert("O Firebase não está pronto para exportar.");
+            return;
+        }
+
+        let message = "📊 *Resumo do Kanban CGF - " + new Date().toLocaleDateString('pt-BR') + "*\n\n";
+        const statusTitles = {
+            todo: "🔴 A FAZER",
+            progress: "🟡 EM ANDAMENTO",
+            review: "🔵 EM REVISÃO",
+            done: "🟢 CONCLUÍDO"
+        };
+        
+        try {
+            const tasksCol = collection(db, "tasks");
+            const taskSnapshot = await getDocs(tasksCol);
+            const tasks = taskSnapshot.docs.map(doc => doc.data());
+
+            const groupedTasks = tasks.reduce((acc, task) => {
+                acc[task.status] = acc[task.status] || [];
+                acc[task.status].push(task);
+                return acc;
+            }, {});
+
+            for (const status in statusTitles) {
+                const list = groupedTasks[status] || [];
+                message += `${statusTitles[status]} (${list.length} tarefas)\n`;
+                
+                if (list.length > 0) {
+                    list.forEach((task, index) => {
+                        const deadlineText = task.deadline ? ` (Prazo: ${new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR')})` : '';
+                        message += `  • ${task.title.substring(0, 40)}${deadlineText}\n`;
+                    });
+                } else {
+                    message += `  _Nenhuma tarefa._\n`;
+                }
+                message += "\n";
+            }
+
+        } catch (e) {
+            console.error("Erro ao gerar resumo para WhatsApp: ", e);
+            alert("Erro ao carregar dados para o WhatsApp. Verifique o console.");
+            return;
+        }
+
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
+
+        window.open(whatsappURL, '_blank');
+    }
 </script>
 </body>
 </html>
