@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanban Board - Gestão de Atividades CGF</title>
 <style>
+/* --- SEU CSS ORIGINAL --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
 .container { max-width: 1400px; margin: 0 auto; }
@@ -45,14 +46,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: fadeIn 0.3s ease; }
 .modal-content h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
 .modal-content label { font-weight: bold; color: #34495e; display: block; margin-bottom: 5px; }
-.modal-content input, .modal-content textarea, .modal-content select {
-  width: 100%; padding: 10px; margin-bottom: 15px;
-  border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px;
-}
-.modal-content button {
-  padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
-  font-weight: 600; margin-right: 10px;
-}
+.modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; }
+.modal-content button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 10px; }
 .modal-content button[type="submit"] { background: #27ae60; color: white; }
 .modal-content button[type="submit"]:hover { background: #2ecc71; }
 .modal-content button[type="button"] { background: #e74c3c; color: white; }
@@ -68,11 +63,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   <div class="header">
     <img src="https://raw.githubusercontent.com/vitorleocl/kanban-cgf/main/logo-cgf.png" alt="CGF Logo" class="logo">
     <h1>Kanban Board - Gestão de Atividades CGF</h1>
-  </div>
-
-  <div class="export-buttons">
-    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF</button>
-    <button class="btn-export btn-whatsapp" onclick="exportToWhatsApp()">💬 Compartilhar WhatsApp</button>
   </div>
 
   <div class="kanban-board">
@@ -132,119 +122,100 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
-<script>
-// --- código JS idêntico ao anterior ---
-let currentStatus = 'todo';
-let draggedElement = null;
-let editingCard = null;
+<!-- 🔥 FIREBASE + FIRESTORE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-function openModal(status, card = null) {
-  currentStatus = status;
-  editingCard = card;
-  document.getElementById('taskModal').classList.add('active');
-  if (card) {
-    document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
-    document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
-    document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', ');
-    const deadline = card.querySelector('.task-deadline')?.dataset.deadline || '';
-    document.getElementById('taskDeadline').value = deadline;
-    const color = card.dataset.color || 'red';
-    document.getElementById('taskColor').value = color;
-  } else document.getElementById('taskForm').reset();
-}
+  const firebaseConfig = {
+    apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
+    authDomain: "kanban-cgf.firebaseapp.com",
+    projectId: "kanban-cgf",
+    storageBucket: "kanban-cgf.firebasestorage.app",
+    messagingSenderId: "713910758161",
+    appId: "1:713910758161:web:c945725a73675c15107ab0",
+    measurementId: "G-1K7V486FY8"
+  };
 
-function closeModal() { document.getElementById('taskModal').classList.remove('active'); editingCard = null; }
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-document.getElementById('taskForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const title = taskTitle.value;
-  const desc = taskDescription.value;
-  const resp = taskResponsible.value;
-  const deadline = taskDeadline.value;
-  const color = taskColor.value;
+  // --- KANBAN ---
+  let currentStatus = 'todo';
+  let draggedElement = null;
 
-  if (editingCard) {
-    editingCard.querySelector('.task-title').textContent = title;
-    editingCard.querySelector('.task-description').textContent = desc;
-    editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
-    editingCard.querySelector('.task-deadline').dataset.deadline = deadline;
-    updateDeadlineStatus(editingCard, deadline);
-  } else {
-    const card = createTaskCard(title, desc, resp, deadline, color);
-    document.getElementById(`${currentStatus}-list`).appendChild(card);
+  function openModal(status) {
+    currentStatus = status;
+    document.getElementById('taskModal').classList.add('active');
   }
-  saveTasks(); closeModal();
-});
 
-function createTaskCard(title, desc, resp, deadline, color) {
-  const card = document.createElement('div');
-  card.className = `task-card ${color}-border`;
-  card.draggable = true;
-  card.dataset.color = color;
-  card.innerHTML = `
-    <div class="task-title">${title}</div>
-    <div class="task-description">${desc}</div>
-    <div class="task-meta">
-      <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
-      <div class="task-deadline" data-deadline="${deadline}"></div>
-    </div>
-    <div class="task-status"></div>
-    <button onclick="openModal('${currentStatus}', this.parentElement)">✏️ Editar</button>
-  `;
-  card.addEventListener('dragstart', e => { draggedElement = card; card.classList.add('dragging'); });
-  card.addEventListener('dragend', e => { draggedElement = null; card.classList.remove('dragging'); saveTasks(); });
-  updateDeadlineStatus(card, deadline);
-  return card;
-}
+  function closeModal() { document.getElementById('taskModal').classList.remove('active'); }
 
-function allowDrop(e) { e.preventDefault(); }
-function dropTask(e, status) {
-  e.preventDefault();
-  if (draggedElement) {
-    document.getElementById(`${status}-list`).appendChild(draggedElement);
-    saveTasks();
-  }
-}
+  document.getElementById('taskForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const title = taskTitle.value.trim();
+    const desc = taskDescription.value.trim();
+    const resp = taskResponsible.value.trim();
+    const deadline = taskDeadline.value;
+    const color = taskColor.value;
 
-function updateDeadlineStatus(card, deadline) {
-  const statusDiv = card.querySelector('.task-status');
-  const dl = new Date(deadline);
-  const now = new Date();
-  if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
-  const diff = Math.ceil((dl - now) / (1000 * 60 * 60 * 24));
-  if (diff >= 0) { statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`; statusDiv.className = 'task-status ok'; }
-  else { statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`; statusDiv.className = 'task-status late'; }
-}
+    const tarefa = { title, desc, resp, deadline, color, status: currentStatus };
 
-function getAllTasks() {
-  const lists = ['todo', 'progress', 'review', 'done'];
-  const tasks = {};
-  lists.forEach(list => {
-    tasks[list] = Array.from(document.querySelectorAll(`#${list}-list .task-card`)).map(c => ({
-      title: c.querySelector('.task-title').textContent,
-      desc: c.querySelector('.task-description').textContent,
-      resp: Array.from(c.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', '),
-      deadline: c.querySelector('.task-deadline').dataset.deadline,
-      color: c.dataset.color
-    }));
+    const docRef = await addDoc(collection(db, "tarefas"), tarefa);
+    tarefa.id = docRef.id;
+    addTaskToDOM(tarefa);
+
+    closeModal();
   });
-  return tasks;
-}
 
-function saveTasks() { localStorage.setItem('kanbanTasks', JSON.stringify(getAllTasks())); }
-function loadTasks() {
-  const saved = localStorage.getItem('kanbanTasks');
-  if (saved) {
-    const tasks = JSON.parse(saved);
-    Object.keys(tasks).forEach(status => {
-      tasks[status].forEach(t => {
-        const card = createTaskCard(t.title, t.desc, t.resp, t.deadline, t.color);
-        document.getElementById(`${status}-list`).appendChild(card);
-      });
+  function addTaskToDOM(tarefa) {
+    const list = document.getElementById(`${tarefa.status}-list`);
+    const card = document.createElement('div');
+    card.className = `task-card ${tarefa.color}-border`;
+    card.draggable = true;
+    card.dataset.id = tarefa.id;
+    card.dataset.color = tarefa.color;
+    card.innerHTML = `
+      <div class="task-title">${tarefa.title}</div>
+      <div class="task-description">${tarefa.desc}</div>
+      <div class="task-meta">
+        <div class="task-responsible">${tarefa.resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+        <div class="task-deadline">${tarefa.deadline || 'Sem prazo'}</div>
+      </div>
+    `;
+    card.addEventListener('dragstart', () => draggedElement = card);
+    card.addEventListener('dragend', async () => {
+      draggedElement = null;
+      await saveStatus(card);
+    });
+    list.appendChild(card);
+  }
+
+  async function saveStatus(card) {
+    const newStatus = card.closest('.kanban-column').dataset.status;
+    const id = card.dataset.id;
+    await setDoc(doc(db, "tarefas", id), { status: newStatus }, { merge: true });
+  }
+
+  function allowDrop(e) { e.preventDefault(); }
+
+  function dropTask(e, status) {
+    e.preventDefault();
+    if (draggedElement) {
+      document.getElementById(`${status}-list`).appendChild(draggedElement);
+    }
+  }
+
+  async function loadTasks() {
+    const querySnapshot = await getDocs(collection(db, "tarefas"));
+    querySnapshot.forEach((doc) => {
+      const tarefa = doc.data();
+      tarefa.id = doc.id;
+      addTaskToDOM(tarefa);
     });
   }
-}
-document.addEventListener('DOMContentLoaded', loadTasks);
+
+  document.addEventListener('DOMContentLoaded', loadTasks);
 </script>
 </body>
 </html>
