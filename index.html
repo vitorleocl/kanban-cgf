@@ -191,7 +191,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     let draggedElement = null;
     let editingCard = null;
 
-    // --- Funções de Manipulação da UI ---
+    // --- Funções de Manipulação da UI e CRUD (SEM ALTERAÇÕES) ---
 
     function openModal(status, card = null) {
         currentStatus = status;
@@ -268,7 +268,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     function allowDrop(e) { e.preventDefault(); }
 
-    // Lida com o DROP (arrastar e soltar)
     async function dropTask(e, newStatus) {
         e.preventDefault();
         if (draggedElement) {
@@ -281,7 +280,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         }
     }
 
-    // Lida com o SUBMIT do formulário (Criação e Edição)
     document.getElementById('taskForm').addEventListener('submit', async e => {
         e.preventDefault();
         const title = taskTitle.value.trim();
@@ -291,9 +289,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         const color = taskColor.value;
         const currentTaskStatus = editingCard ? editingCard.dataset.status : currentStatus;
 
-        const taskData = {
-            title, desc, resp, deadline, color, status: currentTaskStatus
-        };
+        const taskData = { title, desc, resp, deadline, color, status: currentTaskStatus };
 
         if (editingCard) {
             const taskId = editingCard.dataset.taskId;
@@ -314,7 +310,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         await loadTasks();
     });
 
-    // Carregar todas as tarefas (READ)
     async function loadTasks() {
         if (!window.db || !window.getDocs || !window.collection) return; 
 
@@ -341,11 +336,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             console.error("Erro ao carregar tarefas: ", e);
         }
     }
-    // Torna a função loadTasks global
     window.loadTasks = loadTasks;
 
-
-    // Adicionar/Atualizar/Excluir (CREATE, UPDATE, DELETE)
     async function addTask(status, data) {
         try {
             await addDoc(collection(db, "tasks"), { ...data, status: status, createdAt: new Date().toISOString() });
@@ -374,31 +366,54 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
     
-    // EXPORTAR PDF (USANDO html2canvas e jsPDF)
+    // EXPORTAR PDF (CORRIGIDO PARA MÚLTIPLAS PÁGINAS VERTICAIS)
     function exportToPDF() {
         const input = document.querySelector('.container'); 
 
-        // Temporariamente esconde botões e elementos que não devem ir para o PDF
         document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = 'none');
         
-        // Renderiza o conteúdo da div container para um canvas (imagem)
         html2canvas(input, { 
             scale: 2, 
             useCORS: true 
         }).then(canvas => {
             const { jsPDF } = window.jspdf;
             const imgData = canvas.toDataURL('image/png');
+            
+            // Dimensões A4 em mm (Portrait: 'p')
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+            const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
             const imgWidth = canvas.width;
             const imgHeight = canvas.height;
 
-            const ratio = imgWidth / pdfWidth;
-            const finalImgHeight = imgHeight / ratio;
+            // Calcula a altura da imagem proporcionalmente à largura do PDF
+            const ratio = pdfWidth / imgWidth;
+            let finalImgHeight = imgHeight * ratio;
 
-            // Adiciona a imagem no PDF
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
+            let position = 0; // Posição vertical inicial
+
+            // Se o conteúdo for maior que uma página A4
+            if (finalImgHeight > pdfHeight) {
+                let heightLeft = finalImgHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - finalImgHeight;
+                    
+                    // Adiciona nova página para o conteúdo restante
+                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
+                    
+                    heightLeft -= pdfHeight;
+
+                    if (heightLeft > 0) {
+                        pdf.addPage();
+                    }
+                }
+            } else {
+                // Conteúdo cabe em uma única página
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
+            }
+
             pdf.save("Kanban_CGF.pdf");
 
             // RESTAURA a exibição dos botões
@@ -406,7 +421,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         });
     }
 
-    // COMPARTILHAR WHATSAPP (GERA RESUMO)
+    // COMPARTILHAR WHATSAPP (CORRIGIDO PARA EMOJIS)
     async function exportToWhatsApp() {
         if (!window.db || !window.getDocs || !window.collection) {
             alert("O Firebase não está pronto para exportar.");
@@ -453,7 +468,12 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             return;
         }
 
-        const encodedMessage = encodeURIComponent(message);
+        // CORREÇÃO DOS EMOJIS: Codificação dupla para caracteres Unicode (emojis)
+        const encodedMessage = encodeURIComponent(message)
+            .replace(/[!'()*]/g, function(c) {
+                return '%' + c.charCodeAt(0).toString(16);
+            });
+            
         const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
 
         window.open(whatsappURL, '_blank');
