@@ -32,7 +32,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
     cursor: move; 
     transition: transform 0.2s, box-shadow 0.2s; 
-    position: relative; /* Para posicionar o botão Excluir se necessário */
+    position: relative; 
 }
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .task-card.red-border { border-left-color: #e74c3c; }
@@ -142,7 +142,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 </div>
 
 <script type="module">
-    // 1. Importar o Firebase App e os serviços do Firestore
+    // Importa as funções necessárias do Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
@@ -157,11 +157,11 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
       measurementId: "G-1K7V486FY8"
     };
 
-    // 2. Inicializar o Firebase e o Firestore
+    // Inicializa o Firebase e o Firestore
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 3. Exportar as referências globais
+    // Exporta as referências globais para o script principal
     window.db = db;
     window.collection = collection;
     window.addDoc = addDoc;
@@ -170,15 +170,12 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     window.doc = doc;
     window.deleteDoc = deleteDoc;
 
-    // 4. CHAMADA CORRIGIDA: Executa o carregamento das tarefas APÓS a inicialização do Firebase
-    // A função loadTasks deve estar definida no script principal antes de ser chamada aqui.
+    // CHAMADA CORRIGIDA: Garante que a função loadTasks() seja chamada APÓS o carregamento do Firebase
     document.addEventListener('DOMContentLoaded', () => {
-        // Usa um pequeno delay apenas para garantir que o DOM esteja pronto, 
-        // mas a garantia de que o Firebase está pronto é a execução deste bloco.
         if (window.loadTasks) {
             window.loadTasks(); 
         } else {
-             console.error("loadTasks não está definida no escopo global.");
+             console.error("loadTasks não está definida. Verifique o script principal.");
         }
     });
 </script>
@@ -200,7 +197,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
             document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
             
-            // Lógica para obter responsáveis
             const responsibleTags = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent);
             document.getElementById('taskResponsible').value = responsibleTags.join(', ');
             
@@ -220,7 +216,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         editingCard = null;
     }
 
-    // Cria o elemento visual da tarefa (Task Card)
     function createTaskCard(id, title, desc, resp, deadline, status, color) {
         const card = document.createElement('div');
         card.className = `task-card ${color}-border`;
@@ -253,11 +248,10 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     function updateDeadlineStatus(card, deadline) {
         const statusDiv = card.querySelector('.task-status');
-        const dl = new Date(deadline + 'T23:59:59'); // Garante que o dia do prazo está incluído
+        const dl = new Date(deadline + 'T23:59:59'); 
         const now = new Date();
         if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
         
-        // Calcular a diferença em dias, arredondando para cima
         const diff = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         
         if (diff >= 0) { 
@@ -279,11 +273,9 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         if (draggedElement) {
             const taskId = draggedElement.dataset.taskId;
             
-            // 1. Move visualmente a tarefa
             document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
             draggedElement.dataset.status = newStatus;
             
-            // 2. Atualiza no Firestore
             await updateTaskStatus(taskId, newStatus);
         }
     }
@@ -312,7 +304,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             const taskId = editingCard.dataset.taskId;
             await updateTask(taskId, taskData);
 
-            // Atualizar a UI com os novos dados
+            // Atualiza a UI localmente (para evitar recarregar a página inteira)
             editingCard.querySelector('.task-title').textContent = title;
             editingCard.querySelector('.task-description').textContent = desc;
             editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
@@ -322,20 +314,18 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
         } else {
             // Criação (CREATE)
-            // O status é o da coluna onde o botão foi clicado
             await addTask(currentStatus, taskData);
         }
         
         closeModal();
-        await loadTasks(); // Recarrega para garantir a consistência
+        await loadTasks(); // Recarrega para garantir que a nova tarefa apareça
     });
 
     // Carregar todas as tarefas (READ)
     async function loadTasks() {
-        // Verifica se as referências do módulo foram exportadas (após o carregamento)
         if (!window.db || !window.getDocs || !window.collection) return; 
 
-        // Limpa todas as colunas antes de recarregar
+        // Limpa todas as colunas
         ['todo', 'progress', 'review', 'done'].forEach(list => {
             document.getElementById(`${list}-list`).innerHTML = '';
         });
@@ -348,7 +338,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
                 const data = doc.data();
                 const id = doc.id;
                 
-                // Pula se a tarefa não tiver um status válido ou se já foi concluída
                 if (data.status && ['todo', 'progress', 'review', 'done'].includes(data.status)) {
                     const card = createTaskCard(
                         id,
@@ -375,7 +364,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         try {
             await addDoc(collection(db, "tasks"), {
                 ...data,
-                status: status, // Define o status inicial
+                status: status, 
                 createdAt: new Date().toISOString()
             });
         } catch (e) {
