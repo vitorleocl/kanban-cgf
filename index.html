@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanban Board - Gestão de Atividades CGF</title>
 <style>
-/* --- SEU CSS --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
 .container { max-width: 1400px; margin: 0 auto; }
@@ -24,7 +23,17 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .yellow { background: #f39c12; }
 .blue { background: #3498db; }
 .green { background: #27ae60; }
-.task-card { background: white; border-left: 4px solid; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: move; transition: transform 0.2s, box-shadow 0.2s; }
+.task-card { 
+    background: white; 
+    border-left: 4px solid; 
+    border-radius: 6px; 
+    padding: 12px; 
+    margin-bottom: 12px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    cursor: move; 
+    transition: transform 0.2s, box-shadow 0.2s; 
+    position: relative; /* Para posicionar o botão Excluir se necessário */
+}
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .task-card.red-border { border-left-color: #e74c3c; }
 .task-card.yellow-border { border-left-color: #f39c12; }
@@ -32,11 +41,11 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .task-card.green-border { border-left-color: #27ae60; }
 .task-title { font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #2c3e50; }
 .task-description { font-size: 12px; color: #7f8c8d; margin-bottom: 10px; line-height: 1.4; }
-.task-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecf0f1; width:100%; }
+.task-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ecf0f1; }
 .task-responsible { display: flex; gap: 5px; flex-wrap: wrap; }
-.responsible-tag { background: #ecf0f1; padding: 3px 8px; border-radius: 12px; font-size: 11px; color: #34495e; margin-right:6px; }
+.responsible-tag { background: #ecf0f1; padding: 3px 8px; border-radius: 12px; font-size: 11px; color: #34495e; }
 .task-deadline { font-size: 11px; font-weight: 600; }
-.task-status { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; color: white; margin-top:6px; display:inline-block; }
+.task-status { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 12px; color: white; }
 .task-status.ok { background: #27ae60; }
 .task-status.late { background: #e74c3c; }
 .add-task-btn { width: 100%; padding: 10px; background: #ecf0f1; border: 2px dashed #bdc3c7; border-radius: 6px; color: #7f8c8d; cursor: pointer; font-size: 14px; transition: all 0.3s; }
@@ -46,8 +55,14 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); animation: fadeIn 0.3s ease; }
 .modal-content h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
 .modal-content label { font-weight: bold; color: #34495e; display: block; margin-bottom: 5px; }
-.modal-content input, .modal-content textarea, .modal-content select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px; }
-.modal-content button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 10px; }
+.modal-content input, .modal-content textarea, .modal-content select {
+  width: 100%; padding: 10px; margin-bottom: 15px;
+  border: 1px solid #bdc3c7; border-radius: 6px; font-size: 14px;
+}
+.modal-content button {
+  padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;
+  font-weight: 600; margin-right: 10px;
+}
 .modal-content button[type="submit"] { background: #27ae60; color: white; }
 .modal-content button[type="submit"]:hover { background: #2ecc71; }
 .modal-content button[type="button"] { background: #e74c3c; color: white; }
@@ -76,19 +91,16 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
       <div class="task-list" id="todo-list"></div>
       <button class="add-task-btn" onclick="openModal('todo')">+ Adicionar Tarefa</button>
     </div>
-
     <div class="kanban-column" data-status="progress" ondragover="allowDrop(event)" ondrop="dropTask(event, 'progress')">
       <div class="column-header yellow">EM ANDAMENTO</div>
       <div class="task-list" id="progress-list"></div>
       <button class="add-task-btn" onclick="openModal('progress')">+ Adicionar Tarefa</button>
     </div>
-
     <div class="kanban-column" data-status="review" ondragover="allowDrop(event)" ondrop="dropTask(event, 'review')">
       <div class="column-header blue">EM REVISÃO</div>
       <div class="task-list" id="review-list"></div>
       <button class="add-task-btn" onclick="openModal('review')">+ Adicionar Tarefa</button>
     </div>
-
     <div class="kanban-column" data-status="done" ondragover="allowDrop(event)" ondrop="dropTask(event, 'done')">
       <div class="column-header green">CONCLUÍDO</div>
       <div class="task-list" id="done-list"></div>
@@ -97,7 +109,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
-<!-- Modal aprimorado -->
 <div class="modal" id="taskModal">
   <div class="modal-content">
     <h2>Nova Tarefa</h2>
@@ -108,8 +119,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
       <label>Descrição:</label>
       <textarea id="taskDescription" rows="3"></textarea>
 
-      <label>Responsáveis (separados por vírgula):</label>
-      <input type="text" id="taskResponsible" placeholder="Ex: Ana Silva, João">
+      <label>Responsáveis:</label>
+      <input type="text" id="taskResponsible" placeholder="Ex: Ana, João">
 
       <label>Prazo:</label>
       <input type="date" id="taskDeadline">
@@ -130,317 +141,285 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
-<!-- FIREBASE + FIRESTORE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+    // 1. Importar o Firebase App e os serviços do Firestore
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
-    authDomain: "kanban-cgf.firebaseapp.com",
-    projectId: "kanban-cgf",
-    storageBucket: "kanban-cgf.firebasestorage.app",
-    messagingSenderId: "713910758161",
-    appId: "1:713910758161:web:c945725a73675c15107ab0",
-    measurementId: "G-1K7V486FY8"
-  };
+    // Suas configurações do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
+      authDomain: "kanban-cgf.firebaseapp.com",
+      projectId: "kanban-cgf",
+      storageBucket: "kanban-cgf.firebasestorage.app",
+      messagingSenderId: "713910758161",
+      appId: "1:713910758161:web:c945725a73675c15107ab0",
+      measurementId: "G-1K7V486FY8"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    // 2. Inicializar o Firebase e o Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  // estado
-  let currentStatus = 'todo';
-  let draggedElement = null;
-  let editingCard = null;
+    // 3. Exportar as referências globais para uso no código principal
+    // Isso é feito para que as funções no <script> comum possam usar as funções do módulo.
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.updateDoc = updateDoc;
+    window.doc = doc;
+    window.deleteDoc = deleteDoc;
 
-  // ---------- Helpers DOM ----------
-  function openModal(status, card = null) {
-    currentStatus = status;
-    editingCard = card;
-    document.getElementById('taskModal').classList.add('active');
-
-    // se for editar, preencher campos (opcional)
-    if (card) {
-      document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
-      document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
-      document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(t=>t.textContent).join(', ');
-      const dl = card.querySelector('.task-deadline')?.dataset.deadline || '';
-      document.getElementById('taskDeadline').value = dl;
-      document.getElementById('taskColor').value = card.dataset.color || 'red';
-    } else {
-      document.getElementById('taskForm').reset();
-    }
-  }
-
-  function closeModal() {
-    document.getElementById('taskModal').classList.remove('active');
-    editingCard = null;
-    document.getElementById('taskForm').reset();
-  }
-
-  // Expor para global (para onclick inline e handlers HTML)
-  window.openModal = openModal;
-  window.closeModal = closeModal;
-
-  // ---------- Criação de card (DOM) ----------
-  function createTaskCard(tarefa) {
-    // tarefa: { id, title, desc, resp, deadline, color, status }
-    const card = document.createElement('div');
-    card.className = `task-card ${tarefa.color}-border`;
-    card.draggable = true;
-    card.dataset.id = tarefa.id || '';
-    card.dataset.color = tarefa.color || 'red';
-
-    const deadlineDisplay = tarefa.deadline ? new Date(tarefa.deadline).toLocaleDateString('pt-BR') : 'Sem prazo';
-    card.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div style="flex:1;">
-          <div class="task-title">${escapeHtml(tarefa.title)}</div>
-          <div class="task-description">${escapeHtml(tarefa.desc || '')}</div>
-        </div>
-        <div style="margin-left:8px;text-align:right;">
-          <button title="Editar" class="mini-edit-btn" style="background:transparent;border:none;cursor:pointer;font-size:16px;">✏️</button>
-        </div>
-      </div>
-      <div class="task-meta">
-        <div class="task-responsible">${(tarefa.resp || '').split(',').filter(Boolean).map(r=>`<span class="responsible-tag">${escapeHtml(r.trim())}</span>`).join('')}</div>
-        <div style="text-align:right;">
-          <div class="task-deadline" data-deadline="${tarefa.deadline || ''}">${deadlineDisplay}</div>
-        </div>
-      </div>
-      <div class="task-status" style="margin-top:8px;"></div>
-    `;
-
-    // eventos drag
-    card.addEventListener('dragstart', (e) => {
-      draggedElement = card;
-      card.classList.add('dragging');
+    // 4. Chamar o carregamento das tarefas após a inicialização do Firebase
+    // Nota: A função loadTasks está no script abaixo
+    document.addEventListener('DOMContentLoaded', () => {
+        // Um pequeno atraso garante que o Firebase esteja pronto
+        setTimeout(window.loadTasks, 500); 
     });
-    card.addEventListener('dragend', async (e) => {
-      card.classList.remove('dragging');
-      // depois do dragend (que ocorre após drop), atualizar status no Firestore
-      if (card.dataset.id) await saveStatus(card);
-      draggedElement = null;
-    });
+</script>
 
-    // botão editar (abre modal)
-    card.querySelector('.mini-edit-btn').addEventListener('click', (evt) => {
-      evt.stopPropagation();
-      // determinar status atual com base na coluna
-      const column = card.closest('.kanban-column');
-      const status = column ? column.dataset.status : 'todo';
-      openModal(status, card);
-    });
+<script>
+    // Referências e variáveis globais
+    let currentStatus = 'todo';
+    let draggedElement = null;
+    let editingCard = null;
 
-    // atualizar badge de prazo
-    updateDeadlineStatus(card, card.querySelector('.task-deadline')?.dataset.deadline || '');
+    // --- Funções de Manipulação da UI ---
 
-    return card;
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  // ---------- Atualiza status de prazo no card ----------
-  function updateDeadlineStatus(card, deadline) {
-    const statusDiv = card.querySelector('.task-status');
-    if (!statusDiv) return;
-    if (!deadline) {
-      statusDiv.textContent = 'Sem prazo';
-      statusDiv.className = 'task-status';
-      return;
-    }
-    const dl = new Date(deadline);
-    const now = new Date();
-    // zero time part to count full days
-    const diffMs = dl.setHours(0,0,0,0) - (new Date().setHours(0,0,0,0));
-    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays >= 0) {
-      statusDiv.textContent = `✅ No prazo (${diffDays} dia${diffDays!==1?'s':''})`;
-      statusDiv.className = 'task-status ok';
-    } else {
-      statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diffDays)} dia${Math.abs(diffDays)!==1?'s':''})`;
-      statusDiv.className = 'task-status late';
-    }
-  }
-
-  // ---------- Salvar status (Firestore) ----------
-  async function saveStatus(card) {
-    try {
-      const id = card.dataset.id;
-      if (!id) return;
-      const newStatus = card.closest('.kanban-column')?.dataset.status || 'todo';
-      await setDoc(doc(db, "tarefas", id), { status: newStatus }, { merge: true });
-    } catch (err) {
-      console.error('Erro ao salvar status:', err);
-    }
-  }
-
-  // ---------- Drop / Drag helpers ----------
-  function allowDrop(e) { e.preventDefault(); }
-  function dropTask(e, status) {
-    e.preventDefault();
-    if (!draggedElement) return;
-    document.getElementById(`${status}-list`).appendChild(draggedElement);
-    // salvamos aqui também, caso dragend não seja confiável
-    saveStatus(draggedElement);
-  }
-  // expor global para atributos ondrop/ondragover
-  window.allowDrop = allowDrop;
-  window.dropTask = dropTask;
-
-  // ---------- Form submit (Adicionar tarefa) ----------
-  document.getElementById('taskForm').addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const title = document.getElementById('taskTitle').value.trim();
-    const desc = document.getElementById('taskDescription').value.trim();
-    const resp = document.getElementById('taskResponsible').value.trim();
-    const deadline = document.getElementById('taskDeadline').value || '';
-    const color = document.getElementById('taskColor').value || 'red';
-
-    // Se estiver editando um card existente, atualizamos (merge)
-    if (editingCard && editingCard.dataset.id) {
-      try {
-        const id = editingCard.dataset.id;
-        await setDoc(doc(db, "tarefas", id), {
-          title, desc, resp, deadline, color
-        }, { merge: true });
-        // atualizar DOM
-        editingCard.querySelector('.task-title').textContent = title;
-        editingCard.querySelector('.task-description').textContent = desc;
-        editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').filter(Boolean).map(r=>`<span class="responsible-tag">${escapeHtml(r.trim())}</span>`).join('');
-        const dlElem = editingCard.querySelector('.task-deadline');
-        if (dlElem) {
-          dlElem.dataset.deadline = deadline;
-          dlElem.textContent = deadline ? new Date(deadline).toLocaleDateString('pt-BR') : 'Sem prazo';
+    function openModal(status, card = null) {
+        currentStatus = status;
+        editingCard = card;
+        document.getElementById('taskModal').classList.add('active');
+        if (card) {
+            // Preencher o modal para edição
+            document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
+            document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
+            
+            // Lógica para obter responsáveis
+            const responsibleTags = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent);
+            document.getElementById('taskResponsible').value = responsibleTags.join(', ');
+            
+            const deadline = card.querySelector('.task-deadline')?.dataset.deadline || '';
+            document.getElementById('taskDeadline').value = deadline;
+            const color = card.dataset.color || 'red';
+            document.getElementById('taskColor').value = color;
+        } else {
+            // Resetar o modal para nova tarefa
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskColor').value = 'red'; // Cor padrão
         }
-        editingCard.dataset.color = color;
-        editingCard.className = `task-card ${color}-border`;
-        updateDeadlineStatus(editingCard, deadline);
-      } catch (err) {
-        console.error('Erro ao atualizar tarefa:', err);
-      }
-      closeModal();
-      return;
     }
 
-    // criar novo documento no Firestore
-    try {
-      const tarefa = { title, desc, resp, deadline, color, status: currentStatus };
-      const docRef = await addDoc(collection(db, "tarefas"), tarefa);
-      tarefa.id = docRef.id;
-      // adicionar ao DOM
-      const card = createTaskCard(tarefa);
-      document.getElementById(`${currentStatus}-list`).appendChild(card);
-      closeModal();
-    } catch (err) {
-      console.error('Erro ao criar tarefa:', err);
-      alert('Erro ao criar tarefa. Veja console.');
+    function closeModal() {
+        document.getElementById('taskModal').classList.remove('active');
+        editingCard = null;
     }
-  });
 
-  // ---------- Carregar tarefas do Firestore ----------
-  async function loadTasks() {
-    try {
-      const querySnapshot = await getDocs(collection(db, "tarefas"));
-      // limpar listas
-      ['todo','progress','review','done'].forEach(s=> document.getElementById(`${s}-list`).innerHTML = '');
-      querySnapshot.forEach((d) => {
-        const t = d.data();
-        t.id = d.id;
-        // garantir campos existentes
-        t.title = t.title || '';
-        t.desc = t.desc || '';
-        t.resp = t.resp || '';
-        t.deadline = t.deadline || '';
-        t.color = t.color || 'red';
-        t.status = t.status || 'todo';
-        const card = createTaskCard(t);
-        document.getElementById(`${t.status}-list`).appendChild(card);
-      });
-    } catch (err) {
-      console.error('Erro ao carregar tarefas:', err);
+    // Cria o elemento visual da tarefa (Task Card)
+    function createTaskCard(id, title, desc, resp, deadline, status, color) {
+        const card = document.createElement('div');
+        card.className = `task-card ${color}-border`;
+        card.draggable = true;
+        card.dataset.color = color;
+        card.dataset.taskId = id; // ID do Firestore é crucial
+        card.dataset.status = status;
+        card.innerHTML = `
+            <div class="task-title">${title}</div>
+            <div class="task-description">${desc}</div>
+            <div class="task-meta">
+                <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+                <div class="task-deadline" data-deadline="${deadline}"></div>
+            </div>
+            <div class="task-status"></div>
+            <button onclick="openModal('${status}', this.parentElement)">✏️ Editar</button>
+            <button onclick="deleteTask('${id}')">🗑️ Excluir</button>
+        `;
+        card.addEventListener('dragstart', e => {
+            draggedElement = card;
+            card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', e => {
+            draggedElement = null;
+            card.classList.remove('dragging');
+        });
+        updateDeadlineStatus(card, deadline);
+        return card;
     }
-  }
 
-  // ---------- Exportações (simples) ----------
-  function getAllTasksFromDOM() {
-    const lists = ['todo','progress','review','done'];
-    const all = {};
-    lists.forEach(s => {
-      all[s] = Array.from(document.querySelectorAll(`#${s}-list .task-card`)).map(c => ({
-        title: c.querySelector('.task-title')?.textContent || '',
-        description: c.querySelector('.task-description')?.textContent || '',
-        responsible: Array.from(c.querySelectorAll('.responsible-tag')).map(t=>t.textContent).join(', '),
-        deadline: c.querySelector('.task-deadline')?.dataset.deadline || ''
-      }));
+    function updateDeadlineStatus(card, deadline) {
+        const statusDiv = card.querySelector('.task-status');
+        const dl = new Date(deadline + 'T23:59:59'); // Garante que o dia do prazo está incluído
+        const now = new Date();
+        if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
+        
+        // Calcular a diferença em dias, arredondando para cima
+        const diff = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diff >= 0) { 
+            statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`; 
+            statusDiv.className = 'task-status ok'; 
+        } else { 
+            statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`; 
+            statusDiv.className = 'task-status late'; 
+        }
+    }
+
+    function allowDrop(e) { e.preventDefault(); }
+
+    // --- Funções do Firestore (CRUD) ---
+
+    // Lida com o DROP (arrastar e soltar)
+    async function dropTask(e, newStatus) {
+        e.preventDefault();
+        if (draggedElement) {
+            const taskId = draggedElement.dataset.taskId;
+            
+            // 1. Move visualmente a tarefa
+            document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
+            draggedElement.dataset.status = newStatus;
+            
+            // 2. Atualiza no Firestore
+            await updateTaskStatus(taskId, newStatus);
+        }
+    }
+
+    // Lida com o SUBMIT do formulário (Criação e Edição)
+    document.getElementById('taskForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const title = taskTitle.value.trim();
+        const desc = taskDescription.value.trim();
+        const resp = taskResponsible.value.trim();
+        const deadline = taskDeadline.value.trim();
+        const color = taskColor.value;
+        const currentTaskStatus = editingCard ? editingCard.dataset.status : currentStatus;
+
+        const taskData = {
+            title,
+            desc,
+            resp,
+            deadline,
+            color,
+            status: currentTaskStatus
+        };
+
+        if (editingCard) {
+            // Edição (UPDATE)
+            const taskId = editingCard.dataset.taskId;
+            await updateTask(taskId, taskData);
+
+            // Atualizar a UI com os novos dados
+            editingCard.querySelector('.task-title').textContent = title;
+            editingCard.querySelector('.task-description').textContent = desc;
+            editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
+            editingCard.dataset.color = color;
+            editingCard.className = `task-card ${color}-border`;
+            updateDeadlineStatus(editingCard, deadline);
+
+        } else {
+            // Criação (CREATE)
+            // O status é o da coluna onde o botão foi clicado
+            await addTask(currentStatus, taskData);
+        }
+        
+        closeModal();
+        await loadTasks(); // Recarrega para garantir a consistência
     });
-    return all;
-  }
 
-  function exportToPDF() {
-    const tasks = getAllTasksFromDOM();
-    const date = new Date().toLocaleDateString('pt-BR');
-    let html = `<!doctype html><html><head><meta charset="utf-8"><title>Relatório</title><style>body{font-family:Arial;padding:30px}h1{color:#2c3e50} .section{margin-bottom:20px}.task{background:#fff;padding:10px;margin-bottom:8px;border-left:5px solid #ccc;border-radius:4px}</style></head><body>`;
-    html += `<h1>📋 Relatório Kanban - CGF</h1><div>Gerado em: ${date}</div>`;
-    const sections = [
-      { key:'todo', title:'A FAZER' }, { key:'progress', title:'EM ANDAMENTO' },
-      { key:'review', title:'EM REVISÃO' }, { key:'done', title:'CONCLUÍDO' }
-    ];
-    sections.forEach(s => {
-      html += `<h2>${s.title} (${tasks[s.key].length})</h2>`;
-      if (tasks[s.key].length === 0) html += '<i>Nenhuma tarefa</i>';
-      tasks[s.key].forEach(t => {
-        html += `<div class="task"><b>${t.title}</b><div>${t.description}</div><div style="color:#666;font-size:12px">👤 ${t.responsible} | 📅 ${t.deadline || 'Sem prazo'}</div></div>`;
-      });
-    });
-    html += `</body></html>`;
-    const w = window.open('', '_blank');
-    w.document.write(html);
-    w.document.close();
-    w.print();
-  }
+    // Carregar todas as tarefas (READ)
+    async function loadTasks() {
+        // Verifica se as referências do módulo foram exportadas (após o carregamento)
+        if (!window.db || !window.getDocs || !window.collection) return; 
 
-  function exportToWhatsApp() {
-    const tasks = getAllTasksFromDOM();
-    const date = new Date().toLocaleDateString('pt-BR');
-    let msg = `📋 KANBAN CGF - Atualizado em ${date}\n\n`;
-    const sections = [
-      { key:'todo', label:'🔴 A FAZER' },
-      { key:'progress', label:'🟡 EM ANDAMENTO' },
-      { key:'review', label:'🔵 EM REVISÃO' },
-      { key:'done', label:'🟢 CONCLUÍDO' }
-    ];
-    sections.forEach(s => {
-      msg += `${s.label} (${tasks[s.key].length})\n`;
-      if (tasks[s.key].length === 0) msg += 'Nenhuma tarefa\n\n';
-      tasks[s.key].forEach(t => {
-        msg += `• ${t.title}\n`;
-        if (t.description) msg += `${t.description}\n`;
-        if (t.responsible) msg += `👤 ${t.responsible}\n`;
-        if (t.deadline) msg += `📅 ${t.deadline}\n`;
-        msg += '\n';
-      });
-    });
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
-  }
+        // Limpa todas as colunas antes de recarregar
+        ['todo', 'progress', 'review', 'done'].forEach(list => {
+            document.getElementById(`${list}-list`).innerHTML = '';
+        });
 
-  // expor exportações globalmente (buttons inline)
-  window.exportToPDF = exportToPDF;
-  window.exportToWhatsApp = exportToWhatsApp;
+        try {
+            const tasksCol = collection(db, "tasks");
+            const taskSnapshot = await getDocs(tasksCol);
 
-  // ---------- Start ----------
-  document.addEventListener('DOMContentLoaded', () => {
-    loadTasks();
-  });
+            taskSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const id = doc.id;
+                
+                // Pula se a tarefa não tiver um status válido ou se já foi concluída
+                if (data.status && ['todo', 'progress', 'review', 'done'].includes(data.status)) {
+                    const card = createTaskCard(
+                        id,
+                        data.title,
+                        data.desc,
+                        data.resp,
+                        data.deadline,
+                        data.status,
+                        data.color
+                    );
+                    document.getElementById(`${data.status}-list`).appendChild(card);
+                }
+            });
+        } catch (e) {
+            console.error("Erro ao carregar tarefas: ", e);
+        }
+    }
+    // Torna a função loadTasks global para ser chamada pelo script module
+    window.loadTasks = loadTasks;
 
+
+    // Adicionar uma nova tarefa (CREATE)
+    async function addTask(status, data) {
+        try {
+            await addDoc(collection(db, "tasks"), {
+                ...data,
+                status: status, // Define o status inicial
+                createdAt: new Date().toISOString()
+            });
+        } catch (e) {
+            console.error("Erro ao adicionar documento: ", e);
+        }
+    }
+
+    // Atualizar uma tarefa existente (UPDATE - Edição do modal)
+    async function updateTask(id, data) {
+        try {
+            const taskRef = doc(db, "tasks", id);
+            await updateDoc(taskRef, data);
+        } catch (e) {
+            console.error("Erro ao atualizar documento: ", e);
+        }
+    }
+
+    // Atualizar o status da tarefa (UPDATE - Arrastar e soltar)
+    async function updateTaskStatus(id, newStatus) {
+        try {
+            const taskRef = doc(db, "tasks", id);
+            await updateDoc(taskRef, {
+                status: newStatus
+            });
+        } catch (e) {
+            console.error("Erro ao atualizar status: ", e);
+        }
+    }
+
+    // Excluir uma tarefa (DELETE)
+    async function deleteTask(id) {
+        if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
+
+        try {
+            await deleteDoc(doc(db, "tasks", id));
+            // Remove da UI
+            const cardToRemove = document.querySelector(`[data-task-id="${id}"]`);
+            if (cardToRemove) {
+                cardToRemove.remove();
+            }
+        } catch (e) {
+            console.error("Erro ao excluir documento: ", e);
+        }
+    }
+
+    // --- Funções de exportação (Mock) ---
+    function exportToPDF() { alert('Funcionalidade de Exportar PDF não implementada.'); }
+    function exportToWhatsApp() { alert('Funcionalidade de Compartilhar WhatsApp não implementada.'); }
 </script>
 </body>
 </html>
