@@ -161,8 +161,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 3. Exportar as referências globais para uso no código principal
-    // Isso é feito para que as funções no <script> comum possam usar as funções do módulo.
+    // 3. Exportar as referências globais
     window.db = db;
     window.collection = collection;
     window.addDoc = addDoc;
@@ -171,11 +170,16 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     window.doc = doc;
     window.deleteDoc = deleteDoc;
 
-    // 4. Chamar o carregamento das tarefas após a inicialização do Firebase
-    // Nota: A função loadTasks está no script abaixo
+    // 4. CHAMADA CORRIGIDA: Executa o carregamento das tarefas APÓS a inicialização do Firebase
+    // A função loadTasks deve estar definida no script principal antes de ser chamada aqui.
     document.addEventListener('DOMContentLoaded', () => {
-        // Um pequeno atraso garante que o Firebase esteja pronto
-        setTimeout(window.loadTasks, 500); 
+        // Usa um pequeno delay apenas para garantir que o DOM esteja pronto, 
+        // mas a garantia de que o Firebase está pronto é a execução deste bloco.
+        if (window.loadTasks) {
+            window.loadTasks(); 
+        } else {
+             console.error("loadTasks não está definida no escopo global.");
+        }
     });
 </script>
 
