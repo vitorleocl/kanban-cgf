@@ -9,7 +9,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
-/* ... (Seu CSS completo, sem alterações nesta seção) ... */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
 .container { max-width: 1400px; margin: 0 auto; }
@@ -36,7 +35,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     margin-bottom: 12px; 
     box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
     cursor: move; 
-    transition: transform 0.2s, box-shadow 0.2s; 
     position: relative; 
 }
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -191,7 +189,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     let draggedElement = null;
     let editingCard = null;
 
-    // --- Funções de Manipulação da UI e CRUD (SEM ALTERAÇÕES) ---
+    // --- Funções de Manipulação da UI e CRUD (Sem alterações) ---
 
     function openModal(status, card = null) {
         currentStatus = status;
@@ -366,68 +364,42 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
     
-    // EXPORTAR PDF (CORRIGIDO PARA MÚLTIPLAS PÁGINAS VERTICAIS)
+    // EXPORTAR PDF (USANDO MÉTODO html() do jsPDF para melhor paginação vertical A4)
     function exportToPDF() {
-        const input = document.querySelector('.container'); 
+        const input = document.querySelector('.container');
+        const { jsPDF } = window.jspdf;
 
+        // 1. Temporariamente esconde botões e elementos que não devem ir para o PDF
         document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = 'none');
-        
-        html2canvas(input, { 
-            scale: 2, 
-            useCORS: true 
-        }).then(canvas => {
-            const { jsPDF } = window.jspdf;
-            const imgData = canvas.toDataURL('image/png');
-            
-            // Dimensões A4 em mm (Portrait: 'p')
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
-            const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
 
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
+        const pdf = new jsPDF('p', 'mm', 'a4');
 
-            // Calcula a altura da imagem proporcionalmente à largura do PDF
-            const ratio = pdfWidth / imgWidth;
-            let finalImgHeight = imgHeight * ratio;
+        pdf.html(input, {
+            callback: function (pdf) {
+                // Salva o PDF
+                pdf.save("Kanban_CGF.pdf");
 
-            let position = 0; // Posição vertical inicial
-
-            // Se o conteúdo for maior que uma página A4
-            if (finalImgHeight > pdfHeight) {
-                let heightLeft = finalImgHeight;
-
-                while (heightLeft >= 0) {
-                    position = heightLeft - finalImgHeight;
-                    
-                    // Adiciona nova página para o conteúdo restante
-                    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
-                    
-                    heightLeft -= pdfHeight;
-
-                    if (heightLeft > 0) {
-                        pdf.addPage();
-                    }
-                }
-            } else {
-                // Conteúdo cabe em uma única página
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, finalImgHeight);
-            }
-
-            pdf.save("Kanban_CGF.pdf");
-
-            // RESTAURA a exibição dos botões
-            document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = '');
+                // 2. RESTAURA a exibição dos botões
+                document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = '');
+            },
+            x: 10,
+            y: 10,
+            html2canvas: {
+                scale: 0.5, // Ajusta a escala para caber na largura da página A4
+                useCORS: true
+            },
+            autoPaging: 'text' // Permite que a biblioteca quebre o conteúdo em novas páginas se for muito longo
         });
     }
 
-    // COMPARTILHAR WHATSAPP (CORRIGIDO PARA EMOJIS)
+    // COMPARTILHAR WHATSAPP (Codificação simples para máxima compatibilidade dos emojis/formatação)
     async function exportToWhatsApp() {
         if (!window.db || !window.getDocs || !window.collection) {
             alert("O Firebase não está pronto para exportar.");
             return;
         }
 
+        // Usando o Unicode dos emojis diretamente (que costuma funcionar melhor)
         let message = "📊 *Resumo do Kanban CGF - " + new Date().toLocaleDateString('pt-BR') + "*\n\n";
         const statusTitles = {
             todo: "🔴 A FAZER",
@@ -453,8 +425,9 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
                 
                 if (list.length > 0) {
                     list.forEach((task, index) => {
-                        const deadlineText = task.deadline ? ` (Prazo: ${new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR')})` : '';
-                        message += `  • ${task.title.substring(0, 40)}${deadlineText}\n`;
+                        // Certifica que a data está formatada corretamente
+                        const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
+                        message += `  • ${task.title.substring(0, 40)} (Prazo: ${deadlineDate})\n`;
                     });
                 } else {
                     message += `  _Nenhuma tarefa._\n`;
@@ -468,12 +441,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             return;
         }
 
-        // CORREÇÃO DOS EMOJIS: Codificação dupla para caracteres Unicode (emojis)
-        const encodedMessage = encodeURIComponent(message)
-            .replace(/[!'()*]/g, function(c) {
-                return '%' + c.charCodeAt(0).toString(16);
-            });
-            
+        // Codificação simples para o WhatsApp (deve resolver o problema dos emojis)
+        const encodedMessage = encodeURIComponent(message);
         const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
 
         window.open(whatsappURL, '_blank');
