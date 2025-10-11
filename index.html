@@ -84,7 +84,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 
   <div class="export-buttons">
-    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF (Paisagem)</button>
+    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF (Resumo Vertical)</button>
     <button class="btn-export btn-whatsapp" onclick="exportToWhatsApp()">💬 Compartilhar WhatsApp</button>
   </div>
 
@@ -363,47 +363,117 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
     // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
     
-    // EXPORTAR PDF (FORÇANDO ORIENTAÇÃO PAISAGEM/HORIZONTAL)
-    function exportToPDF() {
-        const input = document.querySelector('.container');
+    // EXPORTAR PDF (Modo Resumo de texto A4 Vertical Legível)
+    async function exportToPDF() {
+        if (!window.db || !window.getDocs || !window.collection) {
+            alert("O Firebase não está pronto para exportar.");
+            return;
+        }
+        
         const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' para Portrait (Vertical)
+        const margin = 15;
+        let y = margin; // Posição vertical inicial
 
-        // 1. Temporariamente esconde botões
-        document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = 'none');
+        pdf.setFont('helvetica');
 
-        // Inicializa o PDF em modo PAISAGEM ('l' - landscape)
-        const pdf = new jsPDF('l', 'mm', 'a4');
+        // TÍTULO
+        pdf.setFontSize(18);
+        pdf.setTextColor(44, 62, 80);
+        pdf.text("Kanban Board - Relatório de Atividades CGF", margin, y);
+        y += 10;
+        
+        // DATA DO RELATÓRIO
+        pdf.setFontSize(10);
+        pdf.setTextColor(127, 140, 141);
+        pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, margin, y);
+        y += 10;
+        pdf.setLineWidth(0.5);
+        pdf.line(margin, y, pdf.internal.pageSize.getWidth() - margin, y); 
+        y += 10;
+        
+        pdf.setFontSize(12);
+        pdf.setTextColor(0, 0, 0);
 
-        pdf.html(input, {
-            callback: function (pdf) {
-                pdf.save("Kanban_CGF.pdf");
+        const statusTitles = {
+            todo: "🔴 A FAZER",
+            progress: "🟡 EM ANDAMENTO",
+            review: "🔵 EM REVISÃO",
+            done: "🟢 CONCLUÍDO"
+        };
 
-                // 2. RESTAURA a exibição dos botões
-                document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = '');
-            },
-            x: 10,
-            y: 10,
-            html2canvas: {
-                scale: 0.65, // Aumenta a escala para preencher a largura horizontal (297mm)
-                useCORS: true
-            },
-            autoPaging: 'text' 
-        });
+        try {
+            const tasksCol = collection(db, "tasks");
+            const taskSnapshot = await getDocs(tasksCol);
+            const tasks = taskSnapshot.docs.map(doc => doc.data());
+
+            const groupedTasks = tasks.reduce((acc, task) => {
+                acc[task.status] = acc[task.status] || [];
+                acc[task.status].push(task);
+                return acc;
+            }, {});
+
+            for (const status in statusTitles) {
+                const list = groupedTasks[status] || [];
+                
+                // Quebra de página
+                if (y > pdf.internal.pageSize.getHeight() - margin) {
+                    pdf.addPage();
+                    y = margin;
+                }
+
+                // Título do Status
+                pdf.setFontSize(14);
+                pdf.setTextColor(0, 0, 0);
+                pdf.text(`${statusTitles[status]} (${list.length} tarefas)`, margin, y);
+                y += 8;
+                
+                pdf.setFontSize(11);
+                pdf.setTextColor(52, 73, 94);
+
+                if (list.length > 0) {
+                    list.forEach((task) => {
+                        const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
+                        const taskLine = `• ${task.title} (Prazo: ${deadlineDate}) - Resp: ${task.resp}`;
+                        
+                        const lines = pdf.splitTextToSize(taskLine, pdf.internal.pageSize.getWidth() - (margin * 2));
+                        pdf.text(lines, margin + 5, y);
+                        y += lines.length * 6;
+
+                        y += 3;
+                    });
+                } else {
+                    pdf.setTextColor(127, 140, 141);
+                    pdf.text("Nenhuma tarefa nesta categoria.", margin + 5, y);
+                    y += 8;
+                }
+                y += 5;
+            }
+
+            pdf.save("Kanban_Resumo_CGF.pdf");
+
+        } catch (e) {
+            console.error("Erro ao gerar PDF: ", e);
+            alert("Erro ao carregar dados para o PDF. Verifique o console.");
+        }
     }
 
-    // COMPARTILHAR WHATSAPP (Corrigido para emojis usando uma função de codificação universal)
+
+    // COMPARTILHAR WHATSAPP (Codificação Reforçada de Emojis)
     function encodeWhatsApp(str) {
-        // Codificação que lida melhor com caracteres de 4 bytes (emojis)
-        return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
+        // Usa escape Unicode para garantir que todos os caracteres de 4 bytes sejam lidos
+        return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16))
+               .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, c => {
+                   return encodeURIComponent(c);
+               });
     }
-    
+
     async function exportToWhatsApp() {
         if (!window.db || !window.getDocs || !window.collection) {
             alert("O Firebase não está pronto para exportar.");
             return;
         }
 
-        // Os emojis são definidos aqui e serão codificados
         let message = "📊 *Resumo do Kanban CGF - " + new Date().toLocaleDateString('pt-BR') + "*\n\n";
         const statusTitles = {
             todo: "🔴 A FAZER",
@@ -428,7 +498,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
                 message += `${statusTitles[status]} (${list.length} tarefas)\n`;
                 
                 if (list.length > 0) {
-                    list.forEach((task, index) => {
+                    list.forEach((task) => {
                         const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
                         message += `  • ${task.title.substring(0, 40)} (Prazo: ${deadlineDate})\n`;
                     });
@@ -444,7 +514,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             return;
         }
 
-        // Codificação robusta para o WhatsApp
         const encodedMessage = encodeWhatsApp(message);
         const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
 
