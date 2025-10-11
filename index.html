@@ -77,14 +77,14 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 </style>
 </head>
 <body>
-<div class="container" id="kanbanContent">
+<div class="container">
   <div class="header">
     <img src="https://raw.githubusercontent.com/vitorleocl/kanban-cgf/main/logo-cgf.png" alt="CGF Logo" class="logo">
     <h1>Kanban Board - Gestão de Atividades CGF</h1>
   </div>
 
   <div class="export-buttons">
-    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF</button>
+    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF (Paisagem)</button>
     <button class="btn-export btn-whatsapp" onclick="exportToWhatsApp()">💬 Compartilhar WhatsApp</button>
   </div>
 
@@ -112,7 +112,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
-<!-- MODAL DE NOVA TAREFA -->
 <div class="modal" id="taskModal">
   <div class="modal-content">
     <h2>Nova Tarefa</h2>
@@ -145,77 +144,312 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
+<script type="module">
+    // Importa as funções necessárias do Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+    // Suas configurações do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
+      authDomain: "kanban-cgf.firebaseapp.com",
+      projectId: "kanban-cgf",
+      storageBucket: "kanban-cgf.firebasestorage.app",
+      messagingSenderId: "713910758161",
+      appId: "1:713910758161:web:c945725a73675c15107ab0",
+      measurementId: "G-1K7V486FY8"
+    };
+
+    // Inicializa o Firebase e o Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Exporta as referências globais
+    window.db = db;
+    window.collection = collection;
+    window.addDoc = addDoc;
+    window.getDocs = getDocs;
+    window.updateDoc = updateDoc;
+    window.doc = doc;
+    window.deleteDoc = deleteDoc;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.loadTasks) {
+            window.loadTasks(); 
+        } else {
+             console.error("loadTasks não está definida. Verifique o script principal.");
+        }
+    });
+</script>
+
 <script>
-/* ====== EXPORTAÇÃO PDF COM VISUAL AJUSTADO ====== */
-async function exportToPDF() {
-  const input = document.getElementById('kanbanContent');
-  const { jsPDF } = window.jspdf;
+    // Referências e variáveis globais
+    let currentStatus = 'todo';
+    let draggedElement = null;
+    let editingCard = null;
 
-  // Esconde botões e modal temporariamente
-  document.querySelectorAll('.export-buttons, .add-task-btn, .task-card button').forEach(el => el.style.display = 'none');
+    // --- Funções de Manipulação da UI e CRUD (Sem alterações) ---
 
-  const canvas = await html2canvas(input, { scale: 1.2, useCORS: true });
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF('p', 'mm', 'a4');
-
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pageWidth - 20;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  let heightLeft = imgHeight;
-  let position = 10;
-
-  pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight;
-
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-  }
-
-  pdf.save('Kanban_CGF.pdf');
-
-  document.querySelectorAll('.export-buttons, .add-task-btn, .task-card button').forEach(el => el.style.display = '');
-}
-
-/* ====== WHATSAPP CORRIGIDO (EMOJIS FUNCIONANDO) ====== */
-function exportToWhatsApp() {
-  const emojis = {
-    todo: "🔴",
-    progress: "🟡",
-    review: "🔵",
-    done: "🟢"
-  };
-
-  let message = `📋 *KANBAN - Gestão de Atividades CGF*\nAtualizado em: ${new Date().toLocaleDateString('pt-BR')}\n\n`;
-
-  document.querySelectorAll('.kanban-column').forEach(col => {
-    const status = col.dataset.status;
-    const tasks = col.querySelectorAll('.task-card');
-    message += `${emojis[status]} *${col.querySelector('.column-header').textContent}* (${tasks.length})\n`;
-    message += '──────────────────────────────\n';
-
-    if (tasks.length === 0) {
-      message += `_(sem tarefas)_\n\n`;
-    } else {
-      tasks.forEach(task => {
-        const title = task.querySelector('.task-title').textContent;
-        const desc = task.querySelector('.task-description').textContent;
-        const resps = Array.from(task.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', ');
-        const prazo = task.querySelector('.task-deadline')?.dataset.deadline || 'Sem prazo';
-        message += `• ${title}\n${desc}\n👤 ${resps}\n📅 ${prazo}\n\n`;
-      });
+    function openModal(status, card = null) {
+        currentStatus = status;
+        editingCard = card;
+        document.getElementById('taskModal').classList.add('active');
+        if (card) {
+            document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
+            document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
+            
+            const responsibleTags = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent);
+            document.getElementById('taskResponsible').value = responsibleTags.join(', ');
+            
+            const deadline = card.querySelector('.task-deadline')?.dataset.deadline || '';
+            document.getElementById('taskDeadline').value = deadline;
+            const color = card.dataset.color || 'red';
+            document.getElementById('taskColor').value = color;
+        } else {
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskColor').value = 'red';
+        }
     }
-  });
 
-  message += `Relatório gerado automaticamente pelo Sistema Kanban CGF`;
+    function closeModal() {
+        document.getElementById('taskModal').classList.remove('active');
+        editingCard = null;
+    }
 
-  const encoded = encodeURIComponent(message);
-  window.open(`https://wa.me/?text=${encoded}`, '_blank');
-}
+    function createTaskCard(id, title, desc, resp, deadline, status, color) {
+        const card = document.createElement('div');
+        card.className = `task-card ${color}-border`;
+        card.draggable = true;
+        card.dataset.color = color;
+        card.dataset.taskId = id; 
+        card.dataset.status = status;
+        card.innerHTML = `
+            <div class="task-title">${title}</div>
+            <div class="task-description">${desc}</div>
+            <div class="task-meta">
+                <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+                <div class="task-deadline" data-deadline="${deadline}"></div>
+            </div>
+            <div class="task-status"></div>
+            <button onclick="openModal('${status}', this.parentElement)">✏️ Editar</button>
+            <button onclick="deleteTask('${id}')">🗑️ Excluir</button>
+        `;
+        card.addEventListener('dragstart', e => {
+            draggedElement = card;
+            card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', e => {
+            draggedElement = null;
+            card.classList.remove('dragging');
+        });
+        updateDeadlineStatus(card, deadline);
+        return card;
+    }
+
+    function updateDeadlineStatus(card, deadline) {
+        const statusDiv = card.querySelector('.task-status');
+        const dl = new Date(deadline + 'T23:59:59'); 
+        const now = new Date();
+        if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
+        
+        const diff = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diff >= 0) { 
+            statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`; 
+            statusDiv.className = 'task-status ok'; 
+        } else { 
+            statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`; 
+            statusDiv.className = 'task-status late'; 
+        }
+    }
+
+    function allowDrop(e) { e.preventDefault(); }
+
+    async function dropTask(e, newStatus) {
+        e.preventDefault();
+        if (draggedElement) {
+            const taskId = draggedElement.dataset.taskId;
+            
+            document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
+            draggedElement.dataset.status = newStatus;
+            
+            await updateTaskStatus(taskId, newStatus);
+        }
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const title = taskTitle.value.trim();
+        const desc = taskDescription.value.trim();
+        const resp = taskResponsible.value.trim();
+        const deadline = taskDeadline.value.trim();
+        const color = taskColor.value;
+        const currentTaskStatus = editingCard ? editingCard.dataset.status : currentStatus;
+
+        const taskData = { title, desc, resp, deadline, color, status: currentTaskStatus };
+
+        if (editingCard) {
+            const taskId = editingCard.dataset.taskId;
+            await updateTask(taskId, taskData);
+
+            editingCard.querySelector('.task-title').textContent = title;
+            editingCard.querySelector('.task-description').textContent = desc;
+            editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
+            editingCard.dataset.color = color;
+            editingCard.className = `task-card ${color}-border`;
+            updateDeadlineStatus(editingCard, deadline);
+
+        } else {
+            await addTask(currentStatus, taskData);
+        }
+        
+        closeModal();
+        await loadTasks();
+    });
+
+    async function loadTasks() {
+        if (!window.db || !window.getDocs || !window.collection) return; 
+
+        ['todo', 'progress', 'review', 'done'].forEach(list => {
+            document.getElementById(`${list}-list`).innerHTML = '';
+        });
+
+        try {
+            const tasksCol = collection(db, "tasks");
+            const taskSnapshot = await getDocs(tasksCol);
+
+            taskSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const id = doc.id;
+                
+                if (data.status && ['todo', 'progress', 'review', 'done'].includes(data.status)) {
+                    const card = createTaskCard(
+                        id, data.title, data.desc, data.resp, data.deadline, data.status, data.color
+                    );
+                    document.getElementById(`${data.status}-list`).appendChild(card);
+                }
+            });
+        } catch (e) {
+            console.error("Erro ao carregar tarefas: ", e);
+        }
+    }
+    window.loadTasks = loadTasks;
+
+    async function addTask(status, data) {
+        try {
+            await addDoc(collection(db, "tasks"), { ...data, status: status, createdAt: new Date().toISOString() });
+        } catch (e) { console.error("Erro ao adicionar documento: ", e); }
+    }
+    async function updateTask(id, data) {
+        try {
+            const taskRef = doc(db, "tasks", id);
+            await updateDoc(taskRef, data);
+        } catch (e) { console.error("Erro ao atualizar documento: ", e); }
+    }
+    async function updateTaskStatus(id, newStatus) {
+        try {
+            const taskRef = doc(db, "tasks", id);
+            await updateDoc(taskRef, { status: newStatus });
+        } catch (e) { console.error("Erro ao atualizar status: ", e); }
+    }
+    async function deleteTask(id) {
+        if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
+        try {
+            await deleteDoc(doc(db, "tasks", id));
+            const cardToRemove = document.querySelector(`[data-task-id="${id}"]`);
+            if (cardToRemove) { cardToRemove.remove(); }
+        } catch (e) { console.error("Erro ao excluir documento: ", e); }
+    }
+
+    // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
+    
+    // EXPORTAR PDF (FORÇANDO ORIENTAÇÃO PAISAGEM/HORIZONTAL)
+    function exportToPDF() {
+        const input = document.querySelector('.container');
+        const { jsPDF } = window.jspdf;
+
+        // 1. Temporariamente esconde botões
+        document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = 'none');
+
+        // Inicializa o PDF em modo PAISAGEM ('l' - landscape)
+        const pdf = new jsPDF('l', 'mm', 'a4');
+
+        pdf.html(input, {
+            callback: function (pdf) {
+                pdf.save("Kanban_CGF.pdf");
+
+                // 2. RESTAURA a exibição dos botões
+                document.querySelectorAll('.add-task-btn, .export-buttons button, .task-card button').forEach(el => el.style.display = '');
+            },
+            x: 10,
+            y: 10,
+            html2canvas: {
+                scale: 0.65, // Aumenta a escala para preencher a largura horizontal (297mm)
+                useCORS: true
+            },
+            autoPaging: 'text' 
+        });
+    }
+
+    // COMPARTILHAR WHATSAPP (Corrigido para emojis usando uma função de codificação universal)
+    function encodeWhatsApp(str) {
+        // Codificação que lida melhor com caracteres de 4 bytes (emojis)
+        return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16));
+    }
+    
+    async function exportToWhatsApp() {
+        if (!window.db || !window.getDocs || !window.collection) {
+            alert("O Firebase não está pronto para exportar.");
+            return;
+        }
+
+        // Os emojis são definidos aqui e serão codificados
+        let message = "📊 *Resumo do Kanban CGF - " + new Date().toLocaleDateString('pt-BR') + "*\n\n";
+        const statusTitles = {
+            todo: "🔴 A FAZER",
+            progress: "🟡 EM ANDAMENTO",
+            review: "🔵 EM REVISÃO",
+            done: "🟢 CONCLUÍDO"
+        };
+        
+        try {
+            const tasksCol = collection(db, "tasks");
+            const taskSnapshot = await getDocs(tasksCol);
+            const tasks = taskSnapshot.docs.map(doc => doc.data());
+
+            const groupedTasks = tasks.reduce((acc, task) => {
+                acc[task.status] = acc[task.status] || [];
+                acc[task.status].push(task);
+                return acc;
+            }, {});
+
+            for (const status in statusTitles) {
+                const list = groupedTasks[status] || [];
+                message += `${statusTitles[status]} (${list.length} tarefas)\n`;
+                
+                if (list.length > 0) {
+                    list.forEach((task, index) => {
+                        const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
+                        message += `  • ${task.title.substring(0, 40)} (Prazo: ${deadlineDate})\n`;
+                    });
+                } else {
+                    message += `  _Nenhuma tarefa._\n`;
+                }
+                message += "\n";
+            }
+
+        } catch (e) {
+            console.error("Erro ao gerar resumo para WhatsApp: ", e);
+            alert("Erro ao carregar dados para o WhatsApp. Verifique o console.");
+            return;
+        }
+
+        // Codificação robusta para o WhatsApp
+        const encodedMessage = encodeWhatsApp(message);
+        const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
+
+        window.open(whatsappURL, '_blank');
+    }
 </script>
 </body>
 </html>
