@@ -15,7 +15,7 @@ body { font-family: 'Arial', sans-serif; background: #f5f7fa; padding: 20px; }
 .header { text-align: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 .logo { max-width: 200px; height: auto; margin-bottom: 15px; display: block; margin: 0 auto 15px auto; }
 h1 { color: #2c3e50; font-size: 28px; margin: 0; }
-.export-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+.export-buttons { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
 .btn-export { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
 .btn-pdf { background: #e74c3c; color: white; }
 .btn-whatsapp { background: #25D366; color: white; }
@@ -27,16 +27,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .yellow { background: #f39c12; }
 .blue { background: #3498db; }
 .green { background: #27ae60; }
-.task-card { 
-    background: white; 
-    border-left: 4px solid; 
-    border-radius: 6px; 
-    padding: 12px; 
-    margin-bottom: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    cursor: move; 
-    position: relative; 
-}
+.task-card { background: white; border-left: 4px solid; border-radius: 6px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: move; position: relative; }
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .task-card.red-border { border-left-color: #e74c3c; }
 .task-card.yellow-border { border-left-color: #f39c12; }
@@ -76,6 +67,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 @media (max-width: 640px) { .kanban-board { grid-template-columns: 1fr; } }
 </style>
 </head>
+
 <body>
 <div class="container">
   <div class="header">
@@ -84,7 +76,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 
   <div class="export-buttons">
-    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF (Resumo Vertical)</button>
+    <button class="btn-export btn-pdf" onclick="exportToPDF()">📄 Exportar PDF</button>
     <button class="btn-export btn-whatsapp" onclick="exportToWhatsApp()">💬 Compartilhar WhatsApp</button>
   </div>
 
@@ -112,6 +104,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
   </div>
 </div>
 
+<!-- Modal -->
 <div class="modal" id="taskModal">
   <div class="modal-content">
     <h2>Nova Tarefa</h2>
@@ -145,380 +138,179 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 </div>
 
 <script type="module">
-    // Importa as funções necessárias do Firebase SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+// === Firebase Config ===
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    // Suas configurações do Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
-      authDomain: "kanban-cgf.firebaseapp.com",
-      projectId: "kanban-cgf",
-      storageBucket: "kanban-cgf.firebasestorage.app",
-      messagingSenderId: "713910758161",
-      appId: "1:713910758161:web:c945725a73675c15107ab0",
-      measurementId: "G-1K7V486FY8"
-    };
+const firebaseConfig = {
+  apiKey: "AIzaSyB0B1auGKMZAGmJdpmozNGJY82GmSX4h94",
+  authDomain: "kanban-cgf.firebaseapp.com",
+  projectId: "kanban-cgf",
+  storageBucket: "kanban-cgf.firebasestorage.app",
+  messagingSenderId: "713910758161",
+  appId: "1:713910758161:web:c945725a73675c15107ab0",
+  measurementId: "G-1K7V486FY8"
+};
 
-    // Inicializa o Firebase e o Firestore
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-    // Exporta as referências globais
-    window.db = db;
-    window.collection = collection;
-    window.addDoc = addDoc;
-    window.getDocs = getDocs;
-    window.updateDoc = updateDoc;
-    window.doc = doc;
-    window.deleteDoc = deleteDoc;
+window.db = db;
+window.collection = collection;
+window.addDoc = addDoc;
+window.getDocs = getDocs;
+window.updateDoc = updateDoc;
+window.doc = doc;
+window.deleteDoc = deleteDoc;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if (window.loadTasks) {
-            window.loadTasks(); 
-        } else {
-             console.error("loadTasks não está definida. Verifique o script principal.");
-        }
-    });
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.loadTasks) window.loadTasks();
+});
 </script>
 
 <script>
-    // Referências e variáveis globais
-    let currentStatus = 'todo';
-    let draggedElement = null;
-    let editingCard = null;
+// === CRUD e UI ===
+let currentStatus = 'todo';
+let draggedElement = null;
+let editingCard = null;
 
-    // --- Funções de Manipulação da UI e CRUD (Sem alterações) ---
+function openModal(status, card = null) {
+  currentStatus = status;
+  editingCard = card;
+  document.getElementById('taskModal').classList.add('active');
+  if (card) {
+    document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
+    document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
+    document.getElementById('taskResponsible').value = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent).join(', ');
+    document.getElementById('taskDeadline').value = card.querySelector('.task-deadline')?.dataset.deadline || '';
+    document.getElementById('taskColor').value = card.dataset.color || 'red';
+  } else document.getElementById('taskForm').reset();
+}
 
-    function openModal(status, card = null) {
-        currentStatus = status;
-        editingCard = card;
-        document.getElementById('taskModal').classList.add('active');
-        if (card) {
-            document.getElementById('taskTitle').value = card.querySelector('.task-title').textContent;
-            document.getElementById('taskDescription').value = card.querySelector('.task-description').textContent;
-            
-            const responsibleTags = Array.from(card.querySelectorAll('.responsible-tag')).map(r => r.textContent);
-            document.getElementById('taskResponsible').value = responsibleTags.join(', ');
-            
-            const deadline = card.querySelector('.task-deadline')?.dataset.deadline || '';
-            document.getElementById('taskDeadline').value = deadline;
-            const color = card.dataset.color || 'red';
-            document.getElementById('taskColor').value = color;
-        } else {
-            document.getElementById('taskForm').reset();
-            document.getElementById('taskColor').value = 'red';
-        }
-    }
+function closeModal() { document.getElementById('taskModal').classList.remove('active'); editingCard = null; }
 
-    function closeModal() {
-        document.getElementById('taskModal').classList.remove('active');
-        editingCard = null;
-    }
+function createTaskCard(id, title, desc, resp, deadline, status, color) {
+  const card = document.createElement('div');
+  card.className = `task-card ${color}-border`;
+  card.draggable = true;
+  card.dataset.color = color;
+  card.dataset.taskId = id;
+  card.dataset.status = status;
+  card.innerHTML = `
+    <div class="task-title">${title}</div>
+    <div class="task-description">${desc}</div>
+    <div class="task-meta">
+      <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
+      <div class="task-deadline" data-deadline="${deadline}"></div>
+    </div>
+    <div class="task-status"></div>
+    <button onclick="openModal('${status}', this.parentElement)">✏️ Editar</button>
+    <button onclick="deleteTask('${id}')">🗑️ Excluir</button>
+  `;
+  card.addEventListener('dragstart', () => { draggedElement = card; card.classList.add('dragging'); });
+  card.addEventListener('dragend', () => { draggedElement = null; card.classList.remove('dragging'); });
+  updateDeadlineStatus(card, deadline);
+  return card;
+}
 
-    function createTaskCard(id, title, desc, resp, deadline, status, color) {
-        const card = document.createElement('div');
-        card.className = `task-card ${color}-border`;
-        card.draggable = true;
-        card.dataset.color = color;
-        card.dataset.taskId = id; 
-        card.dataset.status = status;
-        card.innerHTML = `
-            <div class="task-title">${title}</div>
-            <div class="task-description">${desc}</div>
-            <div class="task-meta">
-                <div class="task-responsible">${resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('')}</div>
-                <div class="task-deadline" data-deadline="${deadline}"></div>
-            </div>
-            <div class="task-status"></div>
-            <button onclick="openModal('${status}', this.parentElement)">✏️ Editar</button>
-            <button onclick="deleteTask('${id}')">🗑️ Excluir</button>
-        `;
-        card.addEventListener('dragstart', e => {
-            draggedElement = card;
-            card.classList.add('dragging');
-        });
-        card.addEventListener('dragend', e => {
-            draggedElement = null;
-            card.classList.remove('dragging');
-        });
-        updateDeadlineStatus(card, deadline);
-        return card;
-    }
+function updateDeadlineStatus(card, deadline) {
+  const statusDiv = card.querySelector('.task-status');
+  if (!deadline) { statusDiv.textContent = 'Sem prazo'; return; }
+  const diff = Math.ceil((new Date(deadline) - new Date()) / (1000*60*60*24));
+  statusDiv.textContent = diff >= 0 ? `✅ ${diff} dias restantes` : `⚠️ ${Math.abs(diff)} dias em atraso`;
+  statusDiv.className = diff >= 0 ? 'task-status ok' : 'task-status late';
+}
 
-    function updateDeadlineStatus(card, deadline) {
-        const statusDiv = card.querySelector('.task-status');
-        const dl = new Date(deadline + 'T23:59:59'); 
-        const now = new Date();
-        if (!deadline) { statusDiv.textContent = 'Sem prazo'; statusDiv.className = 'task-status'; return; }
-        
-        const diff = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (diff >= 0) { 
-            statusDiv.textContent = `✅ No prazo (${diff} dias restantes)`; 
-            statusDiv.className = 'task-status ok'; 
-        } else { 
-            statusDiv.textContent = `⚠️ Atrasado (${Math.abs(diff)} dias)`; 
-            statusDiv.className = 'task-status late'; 
-        }
-    }
+function allowDrop(e){e.preventDefault();}
 
-    function allowDrop(e) { e.preventDefault(); }
+async function dropTask(e,newStatus){
+  e.preventDefault();
+  if(draggedElement){
+    const id=draggedElement.dataset.taskId;
+    document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
+    draggedElement.dataset.status=newStatus;
+    await updateTaskStatus(id,newStatus);
+  }
+}
 
-    async function dropTask(e, newStatus) {
-        e.preventDefault();
-        if (draggedElement) {
-            const taskId = draggedElement.dataset.taskId;
-            
-            document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
-            draggedElement.dataset.status = newStatus;
-            
-            await updateTaskStatus(taskId, newStatus);
-        }
-    }
+document.getElementById('taskForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const title=taskTitle.value.trim(), desc=taskDescription.value.trim(),
+        resp=taskResponsible.value.trim(), deadline=taskDeadline.value.trim(),
+        color=taskColor.value, status=editingCard?editingCard.dataset.status:currentStatus;
+  const data={title,desc,resp,deadline,color,status};
+  if(editingCard){await updateTask(editingCard.dataset.taskId,data);}
+  else{await addTask(status,data);}
+  closeModal(); await loadTasks();
+});
 
-    document.getElementById('taskForm').addEventListener('submit', async e => {
-        e.preventDefault();
-        const title = taskTitle.value.trim();
-        const desc = taskDescription.value.trim();
-        const resp = taskResponsible.value.trim();
-        const deadline = taskDeadline.value.trim();
-        const color = taskColor.value;
-        const currentTaskStatus = editingCard ? editingCard.dataset.status : currentStatus;
+async function loadTasks(){
+  ['todo','progress','review','done'].forEach(s=>document.getElementById(`${s}-list`).innerHTML='');
+  const snap=await getDocs(collection(db,'tasks'));
+  snap.docs.forEach(d=>{
+    const t=d.data(); const c=createTaskCard(d.id,t.title,t.desc,t.resp,t.deadline,t.status,t.color);
+    document.getElementById(`${t.status}-list`).appendChild(c);
+  });
+}
+window.loadTasks=loadTasks;
 
-        const taskData = { title, desc, resp, deadline, color, status: currentTaskStatus };
+async function addTask(s,d){await addDoc(collection(db,'tasks'),{...d,status:s,createdAt:new Date().toISOString()});}
+async function updateTask(id,d){await updateDoc(doc(db,'tasks',id),d);}
+async function updateTaskStatus(id,s){await updateDoc(doc(db,'tasks',id),{status:s});}
+async function deleteTask(id){if(confirm('Excluir?'))await deleteDoc(doc(db,'tasks',id));await loadTasks();}
 
-        if (editingCard) {
-            const taskId = editingCard.dataset.taskId;
-            await updateTask(taskId, taskData);
+// === EXPORTAÇÕES ===
+function exportToPDF() {
+  const sec=[
+    {id:'todo',title:'A FAZER',color:'#e74c3c'},
+    {id:'progress',title:'EM ANDAMENTO',color:'#f39c12'},
+    {id:'review',title:'EM REVISÃO',color:'#3498db'},
+    {id:'done',title:'CONCLUÍDO',color:'#27ae60'}
+  ];
+  const date=new Date().toLocaleDateString('pt-BR');
+  let html=`<html><head><style>
+  body{font-family:Arial;padding:25px;}
+  h1{text-align:center;color:#004080;margin-bottom:15px;}
+  h2{text-align:center;color:#444;margin-top:0;margin-bottom:20px;}
+  .section{margin-bottom:20px;}
+  .section-title{padding:5px 10px;color:#fff;border-radius:4px;font-weight:bold;}
+  .task{border-left:5px solid;padding:6px 10px;margin:8px 0;background:#fafafa;}
+  .task h3{margin:0;font-size:14px;}
+  .task p{margin:2px 0;font-size:12px;}
+  </style></head><body>
+  <h1>Relatório Kanban CGF</h1><h2>Gerado em ${date}</h2>`;
+  sec.forEach(s=>{
+    html+=`<div class="section"><div class="section-title" style="background:${s.color}">${s.title}</div>`;
+    document.querySelectorAll(`#${s.id}-list .task-card`).forEach(card=>{
+      html+=`<div class="task" style="border-color:${s.color}">
+      <h3>${card.querySelector('.task-title').textContent}</h3>
+      <p>${card.querySelector('.task-description').textContent}</p>
+      <p><b>Responsáveis:</b> ${Array.from(card.querySelectorAll('.responsible-tag')).map(r=>r.textContent).join(', ')}</p>
+      <p><b>Prazo:</b> ${card.querySelector('.task-deadline').dataset.deadline || 'Sem prazo'}</p>
+      </div>`;
+    }); html+='</div>';
+  });
+  html+='</body></html>';
+  const pdf=new jspdf.jsPDF('p','pt','a4');
+  pdf.html(html,{callback:function(p){p.save('kanban_cgf.pdf');},x:10,y:10});
+}
 
-            editingCard.querySelector('.task-title').textContent = title;
-            editingCard.querySelector('.task-description').textContent = desc;
-            editingCard.querySelector('.task-responsible').innerHTML = resp.split(',').map(r => `<span class="responsible-tag">${r.trim()}</span>`).join('');
-            editingCard.dataset.color = color;
-            editingCard.className = `task-card ${color}-border`;
-            updateDeadlineStatus(editingCard, deadline);
-
-        } else {
-            await addTask(currentStatus, taskData);
-        }
-        
-        closeModal();
-        await loadTasks();
+function exportToWhatsApp() {
+  const sec=[
+    {id:'todo',title:'🟥 A FAZER'},
+    {id:'progress',title:'🟨 EM ANDAMENTO'},
+    {id:'review',title:'🟦 EM REVISÃO'},
+    {id:'done',title:'🟩 CONCLUÍDO'}
+  ];
+  let msg=`*Quadro Kanban - CGF*%0A_Gerado em ${new Date().toLocaleDateString('pt-BR')}_%0A%0A`;
+  sec.forEach(s=>{
+    msg+=`*${s.title}:*%0A`;
+    document.querySelectorAll(`#${s.id}-list .task-card`).forEach(card=>{
+      msg+=`• *${card.querySelector('.task-title').textContent}*%0A_${card.querySelector('.task-description').textContent}_%0AResponsáveis: ${Array.from(card.querySelectorAll('.responsible-tag')).map(r=>r.textContent).join(', ')}%0APrazo: ${card.querySelector('.task-deadline').dataset.deadline || 'Sem prazo'}%0A%0A`;
     });
-
-    async function loadTasks() {
-        if (!window.db || !window.getDocs || !window.collection) return; 
-
-        ['todo', 'progress', 'review', 'done'].forEach(list => {
-            document.getElementById(`${list}-list`).innerHTML = '';
-        });
-
-        try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
-
-            taskSnapshot.docs.forEach(doc => {
-                const data = doc.data();
-                const id = doc.id;
-                
-                if (data.status && ['todo', 'progress', 'review', 'done'].includes(data.status)) {
-                    const card = createTaskCard(
-                        id, data.title, data.desc, data.resp, data.deadline, data.status, data.color
-                    );
-                    document.getElementById(`${data.status}-list`).appendChild(card);
-                }
-            });
-        } catch (e) {
-            console.error("Erro ao carregar tarefas: ", e);
-        }
-    }
-    window.loadTasks = loadTasks;
-
-    async function addTask(status, data) {
-        try {
-            await addDoc(collection(db, "tasks"), { ...data, status: status, createdAt: new Date().toISOString() });
-        } catch (e) { console.error("Erro ao adicionar documento: ", e); }
-    }
-    async function updateTask(id, data) {
-        try {
-            const taskRef = doc(db, "tasks", id);
-            await updateDoc(taskRef, data);
-        } catch (e) { console.error("Erro ao atualizar documento: ", e); }
-    }
-    async function updateTaskStatus(id, newStatus) {
-        try {
-            const taskRef = doc(db, "tasks", id);
-            await updateDoc(taskRef, { status: newStatus });
-        } catch (e) { console.error("Erro ao atualizar status: ", e); }
-    }
-    async function deleteTask(id) {
-        if (!confirm("Tem certeza que deseja excluir esta tarefa?")) return;
-        try {
-            await deleteDoc(doc(db, "tasks", id));
-            const cardToRemove = document.querySelector(`[data-task-id="${id}"]`);
-            if (cardToRemove) { cardToRemove.remove(); }
-        } catch (e) { console.error("Erro ao excluir documento: ", e); }
-    }
-
-    // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
-    
-    // EXPORTAR PDF (Modo Resumo de texto A4 Vertical Legível)
-    async function exportToPDF() {
-        if (!window.db || !window.getDocs || !window.collection) {
-            alert("O Firebase não está pronto para exportar.");
-            return;
-        }
-        
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4'); // 'p' para Portrait (Vertical)
-        const margin = 15;
-        let y = margin; // Posição vertical inicial
-
-        pdf.setFont('helvetica');
-
-        // TÍTULO
-        pdf.setFontSize(18);
-        pdf.setTextColor(44, 62, 80);
-        pdf.text("Kanban Board - Relatório de Atividades CGF", margin, y);
-        y += 10;
-        
-        // DATA DO RELATÓRIO
-        pdf.setFontSize(10);
-        pdf.setTextColor(127, 140, 141);
-        pdf.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, margin, y);
-        y += 10;
-        pdf.setLineWidth(0.5);
-        pdf.line(margin, y, pdf.internal.pageSize.getWidth() - margin, y); 
-        y += 10;
-        
-        pdf.setFontSize(12);
-        pdf.setTextColor(0, 0, 0);
-
-        const statusTitles = {
-            todo: "🔴 A FAZER",
-            progress: "🟡 EM ANDAMENTO",
-            review: "🔵 EM REVISÃO",
-            done: "🟢 CONCLUÍDO"
-        };
-
-        try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
-            const tasks = taskSnapshot.docs.map(doc => doc.data());
-
-            const groupedTasks = tasks.reduce((acc, task) => {
-                acc[task.status] = acc[task.status] || [];
-                acc[task.status].push(task);
-                return acc;
-            }, {});
-
-            for (const status in statusTitles) {
-                const list = groupedTasks[status] || [];
-                
-                // Quebra de página
-                if (y > pdf.internal.pageSize.getHeight() - margin) {
-                    pdf.addPage();
-                    y = margin;
-                }
-
-                // Título do Status
-                pdf.setFontSize(14);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text(`${statusTitles[status]} (${list.length} tarefas)`, margin, y);
-                y += 8;
-                
-                pdf.setFontSize(11);
-                pdf.setTextColor(52, 73, 94);
-
-                if (list.length > 0) {
-                    list.forEach((task) => {
-                        const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
-                        const taskLine = `• ${task.title} (Prazo: ${deadlineDate}) - Resp: ${task.resp}`;
-                        
-                        const lines = pdf.splitTextToSize(taskLine, pdf.internal.pageSize.getWidth() - (margin * 2));
-                        pdf.text(lines, margin + 5, y);
-                        y += lines.length * 6;
-
-                        y += 3;
-                    });
-                } else {
-                    pdf.setTextColor(127, 140, 141);
-                    pdf.text("Nenhuma tarefa nesta categoria.", margin + 5, y);
-                    y += 8;
-                }
-                y += 5;
-            }
-
-            pdf.save("Kanban_Resumo_CGF.pdf");
-
-        } catch (e) {
-            console.error("Erro ao gerar PDF: ", e);
-            alert("Erro ao carregar dados para o PDF. Verifique o console.");
-        }
-    }
-
-
-    // COMPARTILHAR WHATSAPP (Codificação Reforçada de Emojis)
-    function encodeWhatsApp(str) {
-        // Usa escape Unicode para garantir que todos os caracteres de 4 bytes sejam lidos
-        return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16))
-               .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, c => {
-                   return encodeURIComponent(c);
-               });
-    }
-
-    async function exportToWhatsApp() {
-        if (!window.db || !window.getDocs || !window.collection) {
-            alert("O Firebase não está pronto para exportar.");
-            return;
-        }
-
-        let message = "📊 *Resumo do Kanban CGF - " + new Date().toLocaleDateString('pt-BR') + "*\n\n";
-        const statusTitles = {
-            todo: "🔴 A FAZER",
-            progress: "🟡 EM ANDAMENTO",
-            review: "🔵 EM REVISÃO",
-            done: "🟢 CONCLUÍDO"
-        };
-        
-        try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
-            const tasks = taskSnapshot.docs.map(doc => doc.data());
-
-            const groupedTasks = tasks.reduce((acc, task) => {
-                acc[task.status] = acc[task.status] || [];
-                acc[task.status].push(task);
-                return acc;
-            }, {});
-
-            for (const status in statusTitles) {
-                const list = groupedTasks[status] || [];
-                message += `${statusTitles[status]} (${list.length} tarefas)\n`;
-                
-                if (list.length > 0) {
-                    list.forEach((task) => {
-                        const deadlineDate = task.deadline ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR') : 'Sem prazo';
-                        message += `  • ${task.title.substring(0, 40)} (Prazo: ${deadlineDate})\n`;
-                    });
-                } else {
-                    message += `  _Nenhuma tarefa._\n`;
-                }
-                message += "\n";
-            }
-
-        } catch (e) {
-            console.error("Erro ao gerar resumo para WhatsApp: ", e);
-            alert("Erro ao carregar dados para o WhatsApp. Verifique o console.");
-            return;
-        }
-
-        const encodedMessage = encodeWhatsApp(message);
-        const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
-
-        window.open(whatsappURL, '_blank');
-    }
+  });
+  window.open(`https://wa.me/?text=${msg}`,'_blank');
+}
 </script>
 </body>
 </html>
