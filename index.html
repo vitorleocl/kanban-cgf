@@ -27,15 +27,15 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .yellow { background: #f39c12; }
 .blue { background: #3498db; }
 .green { background: #27ae60; }
-.task-card { 
-    background: white; 
-    border-left: 4px solid; 
-    border-radius: 6px; 
-    padding: 12px; 
-    margin-bottom: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    cursor: move; 
-    position: relative; 
+.task-card { 
+    background: white; 
+    border-left: 4px solid; 
+    border-radius: 6px; 
+    padding: 12px; 
+    margin-bottom: 12px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    cursor: move; 
+    position: relative; 
 }
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .task-card.red-border { border-left-color: #e74c3c; }
@@ -177,7 +177,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         if (window.loadTasks) {
             window.loadTasks(); 
         } else {
-            console.error("loadTasks não está definida. Verifique o script principal.");
+             console.error("loadTasks não está definida. Verifique o script principal.");
         }
     });
 </script>
@@ -300,7 +300,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             updateDeadlineStatus(editingCard, deadline);
 
         } else {
-            await addTask(currentTaskStatus, taskData);
+            await addTask(currentStatus, taskData);
         }
         
         closeModal();
@@ -519,10 +519,6 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
         window.open(whatsappURL, '_blank');
     }
-    
-    // ** CORREÇÃO: Tornar as funções de exportação globais para que o onclick do HTML as encontre **
-    window.exportToPDF = exportToPDF;
-    window.exportToWhatsApp = exportToWhatsApp;
 </script>
 </body>
 </html>
