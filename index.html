@@ -27,15 +27,15 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 .yellow { background: #f39c12; }
 .blue { background: #3498db; }
 .green { background: #27ae60; }
-.task-card { 
-    background: white; 
-    border-left: 4px solid; 
-    border-radius: 6px; 
-    padding: 12px; 
-    margin-bottom: 12px; 
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-    cursor: move; 
-    position: relative; 
+.task-card { 
+    background: white; 
+    border-left: 4px solid; 
+    border-radius: 6px; 
+    padding: 12px; 
+    margin-bottom: 12px; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    cursor: move; 
+    position: relative; 
 }
 .task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 .task-card.red-border { border-left-color: #e74c3c; }
@@ -147,7 +147,8 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 <script type="module">
     // Importa as funções necessárias do Firebase SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+    // ** MODIFICAÇÃO: Importar 'query' e 'orderBy' para buscar tarefas ordenadas **
+    import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
     // Suas configurações do Firebase
     const firebaseConfig = {
@@ -172,6 +173,9 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     window.updateDoc = updateDoc;
     window.doc = doc;
     window.deleteDoc = deleteDoc;
+    // ** MODIFICAÇÃO: Exportar 'query' e 'orderBy' **
+    window.query = query;
+    window.orderBy = orderBy;
 
     document.addEventListener('DOMContentLoaded', () => {
         if (window.loadTasks) {
@@ -188,7 +192,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     let draggedElement = null;
     let editingCard = null;
 
-    // --- Funções de Manipulação da UI e CRUD (Sem alterações) ---
+    // --- Funções de Manipulação da UI e CRUD ---
 
     function openModal(status, card = null) {
         currentStatus = status;
@@ -270,10 +274,15 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         if (draggedElement) {
             const taskId = draggedElement.dataset.taskId;
             
-            document.getElementById(`${newStatus}-list`).appendChild(draggedElement);
+            // Remove o card do local original
+            draggedElement.remove();
+            // Adiciona o card ao topo da nova lista (será reordenado no loadTasks)
+            document.getElementById(`${newStatus}-list`).prepend(draggedElement);
             draggedElement.dataset.status = newStatus;
             
             await updateTaskStatus(taskId, newStatus);
+            // Recarrega todas as tarefas para garantir a ordenação após o drag and drop
+            await loadTasks();
         }
     }
 
@@ -300,23 +309,29 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
             updateDeadlineStatus(editingCard, deadline);
 
         } else {
-            await addTask(currentStatus, taskData);
+            await addTask(currentTaskStatus, taskData);
         }
         
         closeModal();
         await loadTasks();
     });
 
+    // ** MODIFICAÇÃO: A função loadTasks foi atualizada para buscar tarefas ORDENADAS. **
     async function loadTasks() {
         if (!window.db || !window.getDocs || !window.collection) return; 
 
+        // Limpa todas as colunas
         ['todo', 'progress', 'review', 'done'].forEach(list => {
             document.getElementById(`${list}-list`).innerHTML = '';
         });
 
         try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
+            const tasksColRef = collection(db, "tasks");
+            // ** ORDENAÇÃO PRINCIPAL: Cria uma consulta (query) que ordena pela data de criação. **
+            // Se você quiser ordenar pelo prazo, mude 'createdAt' para 'deadline'.
+            const q = query(tasksColRef, orderBy("createdAt", "desc"));
+            
+            const taskSnapshot = await getDocs(q);
 
             taskSnapshot.docs.forEach(doc => {
                 const data = doc.data();
@@ -335,11 +350,18 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     }
     window.loadTasks = loadTasks;
 
+    // ** MODIFICAÇÃO: Garante que a data de criação seja salva ao adicionar uma nova tarefa. **
     async function addTask(status, data) {
         try {
-            await addDoc(collection(db, "tasks"), { ...data, status: status, createdAt: new Date().toISOString() });
+            await addDoc(collection(db, "tasks"), { 
+                ...data, 
+                status: status, 
+                createdAt: new Date().toISOString() // Adiciona o campo de data de criação
+            });
         } catch (e) { console.error("Erro ao adicionar documento: ", e); }
     }
+    
+    // Funções CRUD restantes (sem alteração)
     async function updateTask(id, data) {
         try {
             const taskRef = doc(db, "tasks", id);
@@ -361,9 +383,9 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         } catch (e) { console.error("Erro ao excluir documento: ", e); }
     }
 
-    // --- FUNÇÕES DE EXPORTAÇÃO CORRIGIDAS ---
+    // --- FUNÇÕES DE EXPORTAÇÃO ---
     
-    // EXPORTAR PDF (Modo Resumo de texto A4 Vertical Legível)
+    // EXPORTAR PDF (Sem alteração)
     async function exportToPDF() {
         if (!window.db || !window.getDocs || !window.collection) {
             alert("O Firebase não está pronto para exportar.");
@@ -403,8 +425,10 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         };
 
         try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
+            // ** AQUI TAMBÉM UTILIZAMOS A ORDENAÇÃO PARA EXPORTAR CORRETAMENTE **
+            const tasksColRef = collection(db, "tasks");
+            const q = query(tasksColRef, orderBy("createdAt", "desc"));
+            const taskSnapshot = await getDocs(q);
             const tasks = taskSnapshot.docs.map(doc => doc.data());
 
             const groupedTasks = tasks.reduce((acc, task) => {
@@ -459,7 +483,7 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
     }
 
 
-    // COMPARTILHAR WHATSAPP (Codificação Reforçada de Emojis)
+    // COMPARTILHAR WHATSAPP (Sem alteração)
     function encodeWhatsApp(str) {
         // Usa escape Unicode para garantir que todos os caracteres de 4 bytes sejam lidos
         return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16))
@@ -483,8 +507,10 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
         };
         
         try {
-            const tasksCol = collection(db, "tasks");
-            const taskSnapshot = await getDocs(tasksCol);
+            // ** AQUI TAMBÉM UTILIZAMOS A ORDENAÇÃO PARA EXPORTAR CORRETAMENTE **
+            const tasksColRef = collection(db, "tasks");
+            const q = query(tasksColRef, orderBy("createdAt", "desc"));
+            const taskSnapshot = await getDocs(q);
             const tasks = taskSnapshot.docs.map(doc => doc.data());
 
             const groupedTasks = tasks.reduce((acc, task) => {
@@ -519,8 +545,10 @@ h1 { color: #2c3e50; font-size: 28px; margin: 0; }
 
         window.open(whatsappURL, '_blank');
     }
+    
+    // Tornar as funções de exportação globais
+    window.exportToPDF = exportToPDF;
+    window.exportToWhatsApp = exportToWhatsApp;
 </script>
 </body>
 </html>
-
-Não altere mais nada no código, apenas isto
