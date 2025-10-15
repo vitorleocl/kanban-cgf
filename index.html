@@ -1,34 +1,289 @@
-            const groupedTasks = tasks.reduce((acc, task) => {
-                acc[task.status] = acc[task.status] || [];
-                acc[task.status].push(task);
-                return acc;
-            }, {});
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanban Board - Gestão de Atividades CGF</title>
 
-            for (const status in statusTitles) {
-                const list = groupedTasks[status] || [];
-                message += `\n*${statusTitles[status]}* (${list.length})\n`;
+<!-- html2canvas para captura de tela -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-                if (list.length > 0) {
-                    list.forEach(task => {
-                        const deadlineDate = task.deadline
-                            ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR')
-                            : 'Sem prazo';
-                        message += `• ${task.title} (Prazo: ${deadlineDate}) - Resp: ${task.resp}\n`;
-                    });
-                } else {
-                    message += `_Nenhuma tarefa nesta categoria._\n`;
-                }
-            }
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
 
-            const encodedMessage = encodeWhatsApp(message);
-            const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
-            window.open(whatsappURL, '_blank');
-        } catch (e) {
-            console.error("Erro ao exportar para WhatsApp: ", e);
-            alert("Erro ao gerar o resumo para WhatsApp. Veja o console para detalhes.");
+// Configuração do Firebase
+const firebaseConfig = {
+    apiKey: "SUA_API_KEY",
+    authDomain: "SUA_AUTH_DOMAIN",
+    projectId: "SEU_PROJECT_ID",
+    storageBucket: "SEU_BUCKET",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
+};
+
+// Inicialização
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Função para carregar tarefas
+async function loadTasks() {
+    const querySnapshot = await getDocs(collection(db, "kanban"));
+    const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderTasks(tasks);
+}
+
+// Função para salvar tarefa
+async function addTask(task) {
+    await addDoc(collection(db, "kanban"), task);
+    loadTasks();
+}
+
+// Função para atualizar tarefa
+async function updateTask(id, newData) {
+    const taskRef = doc(db, "kanban", id);
+    await updateDoc(taskRef, newData);
+    loadTasks();
+}
+
+// Função para deletar tarefa
+async function deleteTask(id) {
+    const taskRef = doc(db, "kanban", id);
+    await deleteDoc(taskRef);
+    loadTasks();
+}
+
+// Renderiza as tarefas no quadro
+function renderTasks(tasks) {
+    const statuses = ["pendente", "andamento", "concluido"];
+    statuses.forEach(status => {
+        const column = document.getElementById(status);
+        column.innerHTML = "";
+        tasks.filter(t => t.status === status).forEach(task => {
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `
+                <h3>${task.title}</h3>
+                <p>${task.desc}</p>
+                <p><b>Prazo:</b> ${task.deadline || "Sem prazo"}</p>
+                <p><b>Resp.:</b> ${task.resp}</p>
+                <div class="actions">
+                    <button onclick="editTask('${task.id}')">✏️</button>
+                    <button onclick="deleteTask('${task.id}')">🗑️</button>
+                </div>
+            `;
+            column.appendChild(card);
+        });
+    });
+}
+
+// Função para salvar nova tarefa
+window.saveTask = async function() {
+    const title = document.getElementById("title").value.trim();
+    const desc = document.getElementById("desc").value.trim();
+    const resp = document.getElementById("resp").value.trim();
+    const deadline = document.getElementById("deadline").value;
+    const status = document.getElementById("status").value;
+
+    if (!title) return alert("Título é obrigatório!");
+
+    const task = { title, desc, resp, deadline, status };
+    await addTask(task);
+
+    document.getElementById("taskForm").reset();
+}
+
+// Função para editar tarefa
+window.editTask = async function(id) {
+    const newTitle = prompt("Novo título:");
+    if (newTitle) await updateTask(id, { title: newTitle });
+}
+
+// Função para exportar o quadro em imagem
+window.exportKanbanImage = function() {
+    const board = document.querySelector(".kanban");
+    html2canvas(board).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "kanban.png";
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+// Função para exportar tarefas para WhatsApp
+window.exportToWhatsApp = async function() {
+    try {
+        const querySnapshot = await getDocs(collection(db, "kanban"));
+        const tasks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (!tasks.length) {
+            alert("Nenhuma tarefa cadastrada!");
+            return;
         }
+
+        const statusTitles = {
+            pendente: "🟥 Pendentes",
+            andamento: "🟨 Em Andamento",
+            concluido: "🟩 Concluídas"
+        };
+
+        let message = "📋 *Resumo das Atividades - CGF*\n\n";
+
+        const groupedTasks = tasks.reduce((acc, task) => {
+            acc[task.status] = acc[task.status] || [];
+            acc[task.status].push(task);
+            return acc;
+        }, {});
+
+        for (const status in statusTitles) {
+            const list = groupedTasks[status] || [];
+            message += `\n*${statusTitles[status]}* (${list.length})\n`;
+
+            if (list.length > 0) {
+                list.forEach(task => {
+                    const deadlineDate = task.deadline
+                        ? new Date(task.deadline + 'T00:00:00').toLocaleDateString('pt-BR')
+                        : 'Sem prazo';
+                    message += `• ${task.title} (Prazo: ${deadlineDate}) - Resp: ${task.resp}\n`;
+                });
+            } else {
+                message += `_Nenhuma tarefa nesta categoria._\n`;
+            }
+        }
+
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
+        window.open(whatsappURL, '_blank');
+    } catch (e) {
+        console.error("Erro ao exportar para WhatsApp: ", e);
+        alert("Erro ao gerar o resumo para WhatsApp. Veja o console para detalhes.");
     }
+}
+
+loadTasks();
 </script>
 
+<style>
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+header {
+    background-color: #023e8a;
+    color: white;
+    text-align: center;
+    padding: 15px;
+}
+form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    padding: 15px;
+    background: #caf0f8;
+    border-bottom: 2px solid #0077b6;
+}
+form input, form select, form textarea {
+    padding: 8px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    font-size: 14px;
+}
+button {
+    background-color: #0077b6;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+button:hover { background-color: #0096c7; }
+.kanban {
+    display: flex;
+    gap: 10px;
+    justify-content: space-around;
+    margin: 20px;
+    flex-wrap: wrap;
+}
+.column {
+    background: #e9ecef;
+    flex: 1;
+    min-width: 280px;
+    border-radius: 12px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.column h2 {
+    text-align: center;
+    background: #0077b6;
+    color: white;
+    padding: 8px;
+    border-radius: 8px;
+}
+.card {
+    background: white;
+    border-left: 5px solid #0077b6;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.actions button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+.tools {
+    text-align: center;
+    margin: 10px;
+}
+</style>
+</head>
+
+<body>
+<header>
+    <h1>Kanban - Gestão de Atividades CGF</h1>
+</header>
+
+<form id="taskForm">
+    <input type="text" id="title" placeholder="Título" required>
+    <input type="text" id="resp" placeholder="Responsável">
+    <input type="date" id="deadline">
+    <select id="status">
+        <option value="pendente">Pendente</option>
+        <option value="andamento">Em Andamento</option>
+        <option value="concluido">Concluído</option>
+    </select>
+    <textarea id="desc" placeholder="Descrição" rows="2"></textarea>
+    <button type="button" onclick="saveTask()">Adicionar</button>
+</form>
+
+<div class="tools">
+    <button onclick="exportKanbanImage()">📸 Exportar Imagem</button>
+    <button onclick="exportToWhatsApp()">📲 Exportar WhatsApp</button>
+</div>
+
+<div class="kanban">
+    <div class="column" id="pendente">
+        <h2>🟥 Pendente</h2>
+    </div>
+    <div class="column" id="andamento">
+        <h2>🟨 Em Andamento</h2>
+    </div>
+    <div class="column" id="concluido">
+        <h2>🟩 Concluído</h2>
+    </div>
+</div>
 </body>
 </html>
